@@ -40,3 +40,51 @@ thin are my notes for deploying, managing, improving the HA servers in 26+ homes
 - `season`
 - `df_delta_multiplier`
 
+
+# State changes involved / Event bus
++-------------------+
+|       Off         |
++-------------------+
+        |                       | 
+        | df_event_status "on"  | df_event_status "off"
+        v                       v
++-------------------+       +-------------------+
+| DF Event Started  | <-->  | DF Event Turned Off |
++-------------------+       +-------------------+
+        |
+        | climate_snapshot "on"
+        v
++---------------------------+
+| Climate Snapshot Turned On |
++---------------------------+
+        |
+        | climate_snapshot "off"
+        v
++----------------------------+
+| Climate Snapshot Turned Off |
++----------------------------+
+        |
+        | df_conditions_set "on"
+        v
++----------------------------+
+| DF Event Conditions Set     |
++----------------------------+
+        |
+        | changes in climate.office attributes and df_conditions_set "on"
+        v
++----------------------------+
+| Setpoint Change             |
++----------------------------+
+        |
+        | df_restriction_status "off"
+        v
++-------------------+
+| InApp User Override |
++-------------------+
+        |
+        | off
+        v
++-------------------+
+|       Off         |
++-------------------+
+
