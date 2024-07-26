@@ -89,3 +89,55 @@ thin are my notes for deploying, managing, improving the HA servers in 26+ homes
 |       Off         |
 +-------------------+
 ```
+
+```mermaid
+stateDiagram
+    [*] --> Off
+    
+    Off --> DF_Event_Started: df_event_status "on"
+    Off --> DF_Event_Turned_Off: df_event_status "off"
+    Off --> DF_Event_Conditions_Set: df_conditions_set "on"
+    
+    DF_Event_Started --> Climate_Snapshot_Turned_On: climate_snapshot "on"
+    Climate_Snapshot_Turned_On --> Climate_Snapshot_Turned_Off: climate_snapshot "off"
+    
+    DF_Event_Conditions_Set --> Setpoint_Change: changes in climate.office attributes and df_conditions_set "on"
+    
+    InApp_User_Override --> Off: df_restriction_status "off"
+    
+    DF_Event_Turned_Off --> Off
+    
+    DF_Event_Started --> InApp_User_Override: df_restriction_status "off"
+    
+    state Off {
+        [*] --> Off
+    }
+    
+    state DF_Event_Started {
+        [*] --> DF_Event_Started
+    }
+    
+    state Climate_Snapshot_Turned_On {
+        [*] --> Climate_Snapshot_Turned_On
+    }
+    
+    state Climate_Snapshot_Turned_Off {
+        [*] --> Climate_Snapshot_Turned_Off
+    }
+    
+    state DF_Event_Conditions_Set {
+        [*] --> DF_Event_Conditions_Set
+    }
+    
+    state Setpoint_Change {
+        [*] --> Setpoint_Change
+    }
+    
+    state InApp_User_Override {
+        [*] --> InApp_User_Override
+    }
+    
+    state DF_Event_Turned_Off {
+        [*] --> DF_Event_Turned_Off
+    }
+```
