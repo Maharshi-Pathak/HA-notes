@@ -42,6 +42,7 @@ thin are my notes for deploying, managing, improving the HA servers in 26+ homes
 
 
 # State changes involved / Event bus
+```
 +-------------------+
 |       Off         |
 +-------------------+
@@ -87,4 +88,4 @@ thin are my notes for deploying, managing, improving the HA servers in 26+ homes
 +-------------------+
 |       Off         |
 +-------------------+
-
+```
