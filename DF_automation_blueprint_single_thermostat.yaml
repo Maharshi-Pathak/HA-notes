@@ -165,7 +165,7 @@ action:
             target:
               entity_id:
                 - !input df_event_status
-                - !input climate_snapshot
+                - !input climate_snapshot_capture
                 - !input df_restriction_status
           - alias: Check if thermostat in single or dual mode and sets DF conditions
             choose:
