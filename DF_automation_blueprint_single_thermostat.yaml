@@ -15,15 +15,21 @@ blueprint:
       selector:
         entity:
           domain: climate
+    climate_snapshot_entity:
+      name: Climate Snapshot Entity
+      description: Climate snapshot entity to capture pre-DF set up
+      selector:
+        entity:
+          domain: climate
     df_event_status:
       name: DF Event Status
       description: Boolean to track DF event status
       selector:
         entity:
           domain: input_boolean
-    climate_snapshot:
-      name: Climate Snapshot
-      description: Boolean to take climate snapshot
+    climate_snapshot_capture:
+      name: Climate Snapshot Capture
+      description: Boolean to take climate snapshot 
       selector:
         entity:
           domain: input_boolean
@@ -87,7 +93,10 @@ blueprint:
       selector:
         entity:
           domain: input_text
-
+variables:
+  calendar_entity: !input calendar_entity
+  climate_entity: !input climate_entity
+  climate_snapshot_entity: !input climate_snapshot_entity
 trigger:
   - platform: state
     entity_id: !input calendar_entity
@@ -132,13 +141,13 @@ condition: []
 action:
   - variables:
       t_delta: >-
-        {% set df_desc = state_attr(blueprint.calendar_entity, 'description') | from_json %}
+        {% set df_desc = state_attr(calendar_entity, 'description') | from_json %}
         {{ df_desc.T_delta }}
       season: >-
-        {% set df_desc = state_attr(blueprint.calendar_entity, 'description') | from_json %}
+        {% set df_desc = state_attr(calendar_entity, 'description') | from_json %}
         {{ df_desc.season }}
       df_delta_multiplier: >-
-        {% set df_desc = state_attr(blueprint.calendar_entity, 'description') | from_json %}
+        {% set df_desc = state_attr(calendar_entity, 'description') | from_json %}
         {% if df_desc.season == 'cooling' %} 
           1
         {% elif df_desc.season == 'heating' %} 
@@ -168,9 +177,9 @@ action:
                   - service: climate.set_temperature
                     data:
                       target_temp_high: >-
-                        {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high') + t_delta, None) }}
+                        {{ float(state_attr(climate_snapshot_entity, 'target_temp_high') + t_delta, None) }}
                       target_temp_low: >-
-                        {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low') - t_delta, None) }}
+                        {{ float(state_attr(climate_snapshot_entity, 'target_temp_low') - t_delta, None) }}
                     target:
                       entity_id: !input climate_entity
               - conditions:
@@ -186,7 +195,7 @@ action:
                   - service: climate.set_temperature
                     data:
                       temperature: >-
-                        {{ float(state_attr(blueprint.snapshot_temperature, 'temperature') + df_delta_multiplier * t_delta, None) }}
+                        {{ float(state_attr(climate_snapshot_entity, 'temperature') + df_delta_multiplier * t_delta, None) }}
                     target:
                       entity_id: !input climate_entity
           - service: input_boolean.turn_on
@@ -200,22 +209,22 @@ action:
         sequence:
           - service: input_text.set_value
             data:
-              value: "{{ state_attr(blueprint.climate_entity, 'fan_mode') }}"
+              value: "{{ state_attr(climate_entity, 'fan_mode') }}"
             target:
               entity_id: !input snapshot_fan_mode
           - service: input_text.set_value
             data:
-              value: "{{ states(blueprint.climate_entity) }} "
+              value: "{{ states(climate_entity) }} "
             target:
               entity_id: !input snapshot_hvac_mode
           - service: input_text.set_value
             data:
-              value: "{{ state_attr(blueprint.climate_entity, 'preset_mode') }}"
+              value: "{{ state_attr(climate_entity, 'preset_mode') }}"
             target:
               entity_id: !input snapshot_preset_mode
           - service: input_text.set_value
             data:
-              value: "{{ state_attr(blueprint.climate_entity, 'hvac_action') }}"
+              value: "{{ state_attr(climate_entity, 'hvac_action') }}"
             target:
               entity_id: !input snapshot_hvac_action
         alias: Registers Climate Snapshot in helper entities
@@ -234,7 +243,7 @@ action:
           - service: input_boolean.turn_off
             target:
               entity_id:
-                - !input climate_snapshot
+                - !input climate_snapshot_capture
                 - !input df_conditions_set
           - choose:
               - conditions:
@@ -256,9 +265,9 @@ action:
                       - service: climate.set_temperature
                         data:
                           target_temp_high: >-
-                            {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high'), None) }}
+                            {{ float(state_attr(climate_snapshot_entity, 'target_temp_high'), None) }}
                           target_temp_low: >-
-                            {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low'), None) }}
+                            {{ float(state_attr(climate_snapshot_entity, 'target_temp_low'), None) }}
                         target:
                           entity_id: !input climate_entity
                   - conditions:
@@ -274,12 +283,14 @@ action:
                       - service: climate.set_temperature
                         data:
                           temperature: >-
-                            {{ float(state_attr(blueprint.snapshot_temperature, 'temperature'), None) }}
+                            {{ float(state_attr(climate_snapshot_entity, 'temperature'), None) }}
                         target:
-                          entity_id: !input climate_entity
+                          entity_id: !input climate_entity                          
           - service: input_boolean.turn_off
             target:
-              entity_id: !input df_event_status
+              entity_id: 
+                - !input df_event_status
+                - !input df_conditions_set
         alias: Turn off DF event when InApp override by user
       - conditions:
           - condition: trigger
@@ -295,7 +306,7 @@ action:
           - service: input_boolean.turn_off
             target:
               entity_id:
-                - !input climate_snapshot
+                - !input climate_snapshot_capture
                 - !input df_event_status
                 - !input df_conditions_set
                 - !input df_restriction_status
