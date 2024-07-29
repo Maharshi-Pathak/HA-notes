@@ -1,0 +1,329 @@
+blueprint:
+  name: Pseudonymized DF Full Cycle
+  description: Automation for DF full cycle with pseudonymized entities
+  domain: automation
+  input:
+    calendar_entity:
+      name: Calendar Entity
+      description: Calendar entity for DF event
+      selector:
+        entity:
+          domain: calendar
+    climate_entity:
+      name: Climate Entity
+      description: Climate entity to control
+      selector:
+        entity:
+          domain: climate
+    df_event_status:
+      name: DF Event Status
+      description: Boolean to track DF event status
+      selector:
+        entity:
+          domain: input_boolean
+    climate_snapshot:
+      name: Climate Snapshot
+      description: Boolean to take climate snapshot
+      selector:
+        entity:
+          domain: input_boolean
+    df_conditions_set:
+      name: DF Conditions Set
+      description: Boolean to track if DF conditions are set
+      selector:
+        entity:
+          domain: input_boolean
+    df_restriction_status:
+      name: DF Restriction Status
+      description: Boolean to track DF restriction status
+      selector:
+        entity:
+          domain: input_boolean
+    set_point_changed_on_device:
+      name: Set Point Changed On Device
+      description: Boolean to track set point changes on device
+      selector:
+        entity:
+          domain: input_boolean
+    snapshot_fan_mode:
+      name: Snapshot Fan Mode
+      description: Input text to store snapshot fan mode
+      selector:
+        entity:
+          domain: input_text
+    snapshot_hvac_mode:
+      name: Snapshot HVAC Mode
+      description: Input text to store snapshot HVAC mode
+      selector:
+        entity:
+          domain: input_text
+    snapshot_preset_mode:
+      name: Snapshot Preset Mode
+      description: Input text to store snapshot preset mode
+      selector:
+        entity:
+          domain: input_text
+    snapshot_hvac_action:
+      name: Snapshot HVAC Action
+      description: Input text to store snapshot HVAC action
+      selector:
+        entity:
+          domain: input_text
+    snapshot_target_temp_low:
+      name: Snapshot Target Temp Low
+      description: Input text to store snapshot target temp low
+      selector:
+        entity:
+          domain: input_text
+    snapshot_target_temp_high:
+      name: Snapshot Target Temp High
+      description: Input text to store snapshot target temp high
+      selector:
+        entity:
+          domain: input_text
+    snapshot_temperature:
+      name: Snapshot Temperature
+      description: Input text to store snapshot temperature
+      selector:
+        entity:
+          domain: input_text
+
+trigger:
+  - platform: state
+    entity_id: !input calendar_entity
+    from: "off"
+    to: "on"
+    id: df_event_started
+  - platform: state
+    entity_id: !input df_restriction_status
+    from: "off"
+    to: "on"
+    id: DF_restrictions_turned_on
+  - platform: state
+    entity_id: !input set_point_changed_on_device
+    from: "off"
+    to: "on"
+    id: OnDevice_user_override
+  - platform: state
+    entity_id: !input calendar_entity
+    from: "on"
+    to: "off"
+    id: df_event_ended
+  - platform: state
+    entity_id: !input df_restriction_status
+    from: "on"
+    to: "off"
+    id: InApp_user_override
+  - platform: state
+    entity_id: !input climate_entity
+    attribute: temperature
+    id: target_temp_changed
+  - platform: state
+    entity_id: !input climate_entity
+    attribute: target_temp_high
+    id: target_temp_high_changed
+  - platform: state
+    entity_id: !input climate_entity
+    attribute: target_temp_low
+    id: target_temp_low_changed
+
+condition: []
+
+action:
+  - variables:
+      t_delta: >-
+        {% set df_desc = state_attr(blueprint.calendar_entity, 'description') | from_json %}
+        {{ df_desc.T_delta }}
+      season: >-
+        {% set df_desc = state_attr(blueprint.calendar_entity, 'description') | from_json %}
+        {{ df_desc.season }}
+      df_delta_multiplier: >-
+        {% set df_desc = state_attr(blueprint.calendar_entity, 'description') | from_json %}
+        {% if df_desc.season == 'cooling' %} 
+          1
+        {% elif df_desc.season == 'heating' %} 
+          -1
+        {% else %}
+          0
+        {% endif %}
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - df_event_started
+        sequence:
+          - service: input_boolean.turn_on
+            target:
+              entity_id:
+                - !input df_event_status
+                - !input climate_snapshot
+                - !input df_restriction_status
+          - alias: Check if thermostat in single or dual mode and sets DF conditions
+            choose:
+              - conditions:
+                  - condition: state
+                    entity_id: !input climate_entity
+                    state: heat_cool
+                sequence:
+                  - service: climate.set_temperature
+                    data: |
+                      {
+                        "target_temp_high": {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high') + t_delta, None) }},
+                        "target_temp_low": {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low') - t_delta, None) }}
+                      }
+                    target:
+                      entity_id: !input climate_entity
+              - conditions:
+                  - condition: or
+                    conditions:
+                      - condition: state
+                        entity_id: !input climate_entity
+                        state: heat
+                      - condition: state
+                        entity_id: !input climate_entity
+                        state: cool
+                sequence:
+                  - service: climate.set_temperature
+                    data: |
+                      {
+                        "temperature": {{ float(state_attr(blueprint.snapshot_temperature, 'temperature') + df_delta_multiplier * t_delta, None) }}
+                      }
+                    target:
+                      entity_id: !input climate_entity
+          - service: input_boolean.turn_on
+            target:
+              entity_id: !input df_conditions_set
+        alias: Sets DF conditions when the calendar event starts
+      - conditions:
+          - condition: trigger
+            id:
+              - DF_restrictions_turned_on
+        sequence:
+          - service: input_text.set_value
+            data:
+              value: "{{ state_attr(blueprint.climate_entity, 'fan_mode') }}"
+            target:
+              entity_id: !input snapshot_fan_mode
+          - service: input_text.set_value
+            data:
+              value: "{{ states(blueprint.climate_entity) }} "
+            target:
+              entity_id: !input snapshot_hvac_mode
+          - service: input_text.set_value
+            data:
+              value: "{{ state_attr(blueprint.climate_entity, 'preset_mode') }}"
+            target:
+              entity_id: !input snapshot_preset_mode
+          - service: input_text.set_value
+            data:
+              value: "{{ state_attr(blueprint.climate_entity, 'hvac_action') }}"
+            target:
+              entity_id: !input snapshot_hvac_action
+        alias: Registers Climate Snapshot in helper entities
+      - conditions:
+          - condition: trigger
+            id:
+              - InApp_user_override
+              - df_event_ended
+          - condition: state
+            entity_id: !input df_event_status
+            state: "on"
+          - condition: state
+            entity_id: !input df_conditions_set
+            state: "on"
+        sequence:
+          - service: input_boolean.turn_off
+            target:
+              entity_id:
+                - !input climate_snapshot
+                - !input df_conditions_set
+          - choose:
+              - conditions:
+                  - condition: not
+                    conditions:
+                      - condition: state
+                        entity_id: !input snapshot_preset_mode
+                        state: temp
+                sequence:
+                  - service: ecobee.resume_program
+                    data:
+                      entity_id: !input climate_entity
+              - choose:
+                  - conditions:
+                      - condition: state
+                        entity_id: !input climate_entity
+                        state: heat_cool
+                    sequence:
+                      - service: climate.set_temperature
+                        data: |
+                          {
+                            "target_temp_high": {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high'), None) }},
+                            "target_temp_low": {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low'), None) }}
+                          }
+                        target:
+                          entity_id: !input climate_entity
+                  - conditions:
+                      - condition: or
+                        conditions:
+                          - condition: state
+                            entity_id: !input climate_entity
+                            state: cool
+                          - condition: state
+                            entity_id: !input climate_entity
+                            state: heat
+                    sequence:
+                      - service: climate.set_temperature
+                        data: |
+                          {
+                            "temperature": {{ float(state_attr(blueprint.snapshot_temperature, 'temperature'), None) }}
+                          }
+                        target:
+                          entity_id: !input climate_entity
+          - service: input_boolean.turn_off
+            target:
+              entity_id: !input df_event_status
+        alias: Turn off DF event when InApp override by user
+      - conditions:
+          - condition: trigger
+            id:
+              - OnDevice_user_override
+          - condition: state
+            entity_id: !input df_event_status
+            state: "on"
+          - condition: state
+            entity_id: !input df_conditions_set
+            state: "on"
+        sequence:
+          - service: input_boolean.turn_off
+            target:
+              entity_id:
+                - !input climate_snapshot
+                - !input df_event_status
+                - !input df_conditions_set
+                - !input df_restriction_status
+          - delay:
+              seconds: 30
+          - service: input_boolean.turn_off
+            target:
+              entity_id: !input set_point_changed_on_device
+        alias: Turn off DF conditions when OnDevice override by any occupant
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: trigger
+                id:
+                  - target_temp_changed
+                  - target_temp_high_changed
+                  - target_temp_low_changed
+              - condition: state
+                entity_id: !input df_conditions_set
+                state: "on"
+        sequence:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: !input set_point_changed_on_device
+        alias: Registers OnDevice Set Point Change
+
+mode: queued
+trace:
+  stored_traces: 20
