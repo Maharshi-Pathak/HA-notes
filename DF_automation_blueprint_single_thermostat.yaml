@@ -339,7 +339,7 @@ action:
       - service: input_boolean.turn_off
         target:
           entity_id:
-            - !input climate_snapshot
+            - !input climate_snapshot_capture
             - !input df_event_status
             - !input df_conditions_set
             - !input df_restriction_status
