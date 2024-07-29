@@ -50,14 +50,14 @@ condition: []
 action:
   - variables:
       t_delta: >-
-        {% set df_desc = state_attr('calendar.weh_mpnnvs5ppatx_gmail_com',
-        'description') | from_json %} {{ df_desc.T_delta}}
+        {% set df_desc = state_attr('calendar.weh_mpnnvs5ppatx_gmail_com', 'description') | from_json %}
+        {{ df_desc.T_delta}}
       season: >-
-        {% set df_desc = state_attr('calendar.weh_mpnnvs5ppatx_gmail_com',
-        'description') | from_json %} {{ df_desc.season}}
+        {% set df_desc = state_attr('calendar.weh_mpnnvs5ppatx_gmail_com', 'description') | from_json %}
+        {{ df_desc.season}}
       df_delta_multiplier: >-
-        {% set df_desc = state_attr('calendar.weh_mpnnvs5ppatx_gmail_com',
-        'description') | from_json %} {% if df_desc.season == 'cooling'%} 
+        {% set df_desc = state_attr('calendar.weh_mpnnvs5ppatx_gmail_com', 'description') | from_json %}
+        {% if df_desc.season == 'cooling'%} 
           1
         {% elif df_desc.season == 'heating'%} 
           -1

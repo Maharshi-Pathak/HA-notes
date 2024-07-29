@@ -162,6 +162,8 @@ action:
               - df_event_started
         sequence:
           - service: input_boolean.turn_on
+            metadata: {}
+            data: {}
             target:
               entity_id:
                 - !input df_event_status
@@ -175,13 +177,15 @@ action:
                     state: heat_cool
                 sequence:
                   - service: climate.set_temperature
-                    data:
-                      target_temp_high: >-
-                        {{ float(state_attr(climate_snapshot_entity, 'target_temp_high') + t_delta, None) }}
-                      target_temp_low: >-
-                        {{ float(state_attr(climate_snapshot_entity, 'target_temp_low') - t_delta, None) }}
+                    metadata: {}
+                    data: >
+                      {
+                        "target_temp_high": {{ float(state_attr(climate_snapshot_entity, 'target_temp_high') + t_delta, None)}},
+                        "target_temp_low": {{ float(state_attr(climate_snapshot_entity, 'target_temp_low') - t_delta, None) }}
+                      }
                     target:
                       entity_id: !input climate_entity
+                alias: Confirms dual mode
               - conditions:
                   - condition: or
                     conditions:
@@ -191,14 +195,19 @@ action:
                       - condition: state
                         entity_id: !input climate_entity
                         state: cool
+                    alias: Check HVAC mode is heating or cooling
                 sequence:
                   - service: climate.set_temperature
-                    data:
-                      temperature: >-
-                        {{ float(state_attr(climate_snapshot_entity, 'temperature') + df_delta_multiplier * t_delta, None) }}
+                    metadata: {}
+                    data: >
+                      {
+                        "temperature": {{ float(state_attr(climate_snapshot_entity, 'temperature') + df_delta_multiplier*t_delta, None) }}
+                      }                      
                     target:
                       entity_id: !input climate_entity
           - service: input_boolean.turn_on
+            metadata: {}
+            data: {}
             target:
               entity_id: !input df_conditions_set
         alias: Sets DF conditions when the calendar event starts
@@ -208,43 +217,49 @@ action:
               - DF_restrictions_turned_on
         sequence:
           - service: input_text.set_value
+            metadata: {}
             data:
-              value: "{{ state_attr(climate_entity, 'fan_mode') }}"
+              value: "{{state_attr(climate_entity, 'fan_mode') }}"
             target:
               entity_id: !input snapshot_fan_mode
           - service: input_text.set_value
+            metadata: {}
             data:
               value: "{{ states(climate_entity) }} "
             target:
               entity_id: !input snapshot_hvac_mode
           - service: input_text.set_value
+            metadata: {}
             data:
               value: "{{ state_attr(climate_entity, 'preset_mode') }}"
             target:
               entity_id: !input snapshot_preset_mode
           - service: input_text.set_value
+            metadata: {}
             data:
               value: "{{ state_attr(climate_entity, 'hvac_action') }}"
             target:
               entity_id: !input snapshot_hvac_action
-        alias: Registers Climate Snapshot in helper entities
+        alias: "Registers Climate Snapshot in helper entities"
       - conditions:
           - condition: trigger
             id:
               - InApp_user_override
               - df_event_ended
           - condition: state
-            entity_id: !input df_event_status
-            state: "on"
-          - condition: state
-            entity_id: !input df_conditions_set
+            entity_id: 
+              - !input df_event_status
+              - !input df_conditions_set
             state: "on"
         sequence:
           - service: input_boolean.turn_off
+            metadata: {}
+            data: {}
             target:
               entity_id:
                 - !input climate_snapshot_capture
                 - !input df_conditions_set
+                - !input df_event_status
           - choose:
               - conditions:
                   - condition: not
@@ -256,41 +271,45 @@ action:
                   - service: ecobee.resume_program
                     data:
                       entity_id: !input climate_entity
-              - choose:
-                  - conditions:
-                      - condition: state
-                        entity_id: !input climate_entity
-                        state: heat_cool
-                    sequence:
-                      - service: climate.set_temperature
-                        data:
-                          target_temp_high: >-
-                            {{ float(state_attr(climate_snapshot_entity, 'target_temp_high'), None) }}
-                          target_temp_low: >-
-                            {{ float(state_attr(climate_snapshot_entity, 'target_temp_low'), None) }}
-                        target:
-                          entity_id: !input climate_entity
-                  - conditions:
-                      - condition: or
-                        conditions:
+              - conditions:
+                  - condition: state
+                    entity_id: input_text.smart_cities_snapshot_preset_mode
+                    state: temp
+                sequence:
+                  - choose:
+                      - conditions:
                           - condition: state
                             entity_id: !input climate_entity
-                            state: cool
-                          - condition: state
-                            entity_id: !input climate_entity
-                            state: heat
-                    sequence:
-                      - service: climate.set_temperature
-                        data:
-                          temperature: >-
-                            {{ float(state_attr(climate_snapshot_entity, 'temperature'), None) }}
-                        target:
-                          entity_id: !input climate_entity                          
-          - service: input_boolean.turn_off
-            target:
-              entity_id: 
-                - !input df_event_status
-                - !input df_conditions_set
+                            state: heat_cool
+                        sequence:
+                          - service: climate.set_temperature
+                            metadata: {}
+                            data: >
+                              {
+                                "target_temp_high": {{ float(state_attr(climate_snapshot_entity, 'target_temp_high'), None) }},
+                                "target_temp_low": {{ float(state_attr(climate_snapshot_entity, 'target_temp_low'), None) }}
+                              }  
+                            target:
+                              entity_id: !input climate_entity 
+                      - conditions:
+                          - condition: or
+                            conditions:
+                              - condition: state
+                                entity_id: !input climate_entity
+                                state: cool
+                              - condition: state
+                                entity_id: !input climate_entity
+                                state: heat
+                        sequence:
+                          - service: climate.set_temperature
+                            metadata: {}
+                            data: >
+                              {
+                                "temperature": {{ float(state_attr(climate_snapshot_entity, 'temperature'), None) }}
+                              }
+                            target:
+                              entity_id: !input climate_entity                     
+
         alias: Turn off DF event when InApp override by user
       - conditions:
           - condition: trigger
@@ -310,9 +329,14 @@ action:
                 - !input df_event_status
                 - !input df_conditions_set
                 - !input df_restriction_status
-          - delay:
+          - delay:              
+              hours: 0
+              minutes: 0
               seconds: 10
+              milliseconds: 0
           - service: input_boolean.turn_off
+            metadata: {}
+            data: {}
             target:
               entity_id: !input set_point_changed_on_device
         alias: Turn off DF conditions when OnDevice override by any occupant
@@ -347,6 +371,6 @@ action:
         target:
           entity_id: !input set_point_changed_on_device
 
-mode: queued
+mode: single
 trace:
   stored_traces: 20
