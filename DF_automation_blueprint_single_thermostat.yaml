@@ -1,6 +1,6 @@
 blueprint:
-  name: Pseudonymized DF Full Cycle
-  description: Automation for DF full cycle with pseudonymized entities
+  name: DF Full Cycle
+  description: Automation for managing the DF full cycle
   domain: automation
   input:
     calendar_entity:
@@ -166,11 +166,11 @@ action:
                     state: heat_cool
                 sequence:
                   - service: climate.set_temperature
-                    data: |
-                      {
-                        "target_temp_high": {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high') + t_delta, None) }},
-                        "target_temp_low": {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low') - t_delta, None) }}
-                      }
+                    data:
+                      target_temp_high: >-
+                        {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high') + t_delta, None) }}
+                      target_temp_low: >-
+                        {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low') - t_delta, None) }}
                     target:
                       entity_id: !input climate_entity
               - conditions:
@@ -184,10 +184,9 @@ action:
                         state: cool
                 sequence:
                   - service: climate.set_temperature
-                    data: |
-                      {
-                        "temperature": {{ float(state_attr(blueprint.snapshot_temperature, 'temperature') + df_delta_multiplier * t_delta, None) }}
-                      }
+                    data:
+                      temperature: >-
+                        {{ float(state_attr(blueprint.snapshot_temperature, 'temperature') + df_delta_multiplier * t_delta, None) }}
                     target:
                       entity_id: !input climate_entity
           - service: input_boolean.turn_on
@@ -255,11 +254,11 @@ action:
                         state: heat_cool
                     sequence:
                       - service: climate.set_temperature
-                        data: |
-                          {
-                            "target_temp_high": {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high'), None) }},
-                            "target_temp_low": {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low'), None) }}
-                          }
+                        data:
+                          target_temp_high: >-
+                            {{ float(state_attr(blueprint.snapshot_target_temp_high, 'target_temp_high'), None) }}
+                          target_temp_low: >-
+                            {{ float(state_attr(blueprint.snapshot_target_temp_low, 'target_temp_low'), None) }}
                         target:
                           entity_id: !input climate_entity
                   - conditions:
@@ -273,10 +272,9 @@ action:
                             state: heat
                     sequence:
                       - service: climate.set_temperature
-                        data: |
-                          {
-                            "temperature": {{ float(state_attr(blueprint.snapshot_temperature, 'temperature'), None) }}
-                          }
+                        data:
+                          temperature: >-
+                            {{ float(state_attr(blueprint.snapshot_temperature, 'temperature'), None) }}
                         target:
                           entity_id: !input climate_entity
           - service: input_boolean.turn_off
@@ -302,7 +300,7 @@ action:
                 - !input df_conditions_set
                 - !input df_restriction_status
           - delay:
-              seconds: 30
+              seconds: 10
           - service: input_boolean.turn_off
             target:
               entity_id: !input set_point_changed_on_device
@@ -318,11 +316,25 @@ action:
               - condition: state
                 entity_id: !input df_conditions_set
                 state: "on"
+              - condition: state
+                entity_id: !input df_event_status
+                state: "on"
         sequence:
           - service: input_boolean.turn_on
             target:
               entity_id: !input set_point_changed_on_device
         alias: Registers OnDevice Set Point Change
+    default:
+      - service: input_boolean.turn_off
+        target:
+          entity_id:
+            - !input climate_snapshot
+            - !input df_event_status
+            - !input df_conditions_set
+            - !input df_restriction_status
+      - service: input_boolean.turn_on
+        target:
+          entity_id: !input set_point_changed_on_device
 
 mode: queued
 trace:
