@@ -134,40 +134,22 @@ thin are my notes for deploying, managing, improving the HA servers in 26+ homes
 
 
 ```mermaid
-stateDiagram
-    [*] --> Idle
+stateDiagram-v2
+    [*] --> Initial: Start
+    Initial --> DF_Event_Started: calendar.nuhome_df_test "on"
+    DF_Event_Started --> Snapshot_and_Restriction_Enabled: input_boolean.df_event_status "on"
+    Snapshot_and_Restriction_Enabled --> Take_Climate_Snapshot: input_boolean.climate_snapshot "on"
+    Take_Climate_Snapshot --> Set_DF_Conditions: input_boolean.set_df_conditions "on"
     
-    Idle --> DF_Event_Started: df_event_started
-    DF_Event_Started --> DF_Event_Status_On: Turn on df_event_status, climate_snapshot, df_restriction_status
-    DF_Event_Status_On --> Check_Thermostat_Mode: Check thermostat mode
-    Check_Thermostat_Mode --> Dual_Mode: Thermostat is heat_cool
-    Dual_Mode --> Set_Temperature_Dual: Set target_temp_high and target_temp_low
-    Check_Thermostat_Mode --> Single_Mode: Thermostat is heat or cool
-    Single_Mode --> Set_Temperature_Single: Set temperature
-    Set_Temperature_Dual --> DF_Conditions_Set: df_conditions_set "on"
-    Set_Temperature_Single --> DF_Conditions_Set: df_conditions_set "on"
-
-    DF_Conditions_Set --> Climate_Snapshot_Turned_On: df_restriction_status "on"
-    Climate_Snapshot_Turned_On --> Register_Snapshot: Register climate snapshot
-    Register_Snapshot --> DF_Conditions_Set
-
-    DF_Event_Started --> InApp_User_Override: df_restriction_status "off"
-    DF_Event_Started --> DF_Event_Ended: df_event_ended
-    InApp_User_Override --> Handle_InApp_User_Override: df_event_status "on"
-    Handle_InApp_User_Override --> Resume_Program: Resume program if preset_mode is not temp
-    Handle_InApp_User_Override --> Restore_Temperatures: Restore temperatures if preset_mode is temp
-    Restore_Temperatures --> Heat_Cool_Mode: Thermostat is heat_cool
-    Heat_Cool_Mode --> Restore_Heat_Cool: Set target_temp_high and target_temp_low
-    Restore_Temperatures --> Heat_Or_Cool_Mode: Thermostat is heat or cool
-    Heat_Or_Cool_Mode --> Restore_Heat_Or_Cool: Set temperature
-    Restore_Heat_Cool --> Idle
-    Restore_Heat_Or_Cool --> Idle
-
-    DF_Event_Started --> OnDevice_User_Override: smart_cities_set_point_changed_on_device "on"
-    OnDevice_User_Override --> Handle_OnDevice_User_Override: df_event_status "on"
-    Handle_OnDevice_User_Override --> Idle: Turn off all DF conditions
-
-    DF_Conditions_Set --> Setpoint_Change: Changes in climate.office attributes
-    Setpoint_Change --> Register_OnDevice_Set_Point_Change: Register set point change
-    Register_OnDevice_Set_Point_Change --> DF_Conditions_Set
+    Set_DF_Conditions --> Occupant_Override_In_App: input_boolean.df_restriction_status "off"
+    Occupant_Override_In_App --> [*]: Reset Climate Conditions & DF booleans
+    
+    Set_DF_Conditions --> Occupant_Override_On_Device: input_boolean.smart_cities_set_point_changed_on_device "on"
+    Occupant_Override_On_Device --> [*]: Turn off DF Booleans
+    
+    Set_DF_Conditions --> Detect_Set_Point_Changes: climate.office attribute change
+    Detect_Set_Point_Changes --> [*]: Turn on ON device Override Boolean
+    
+    Set_DF_Conditions --> DF_Event_Ended: calendar.nuhome_df_test "off"
+    DF_Event_Ended --> [*]: Reset DF Booleans & DF booleans
 ```
