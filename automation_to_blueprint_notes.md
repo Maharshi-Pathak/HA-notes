@@ -113,85 +113,85 @@ blueprint:
       selector:
         entity:
           domain: climate
-    input_boolean_set_df_conditions:
+    set_df_conditions:
       name: Set DF Conditions
       description: "Input boolean to enable DF conditions"
       selector:
         entity:
           domain: input_boolean
-    input_text_thermostat_snapshot_fan_mode:
+    thermostat_snapshot_fan_mode:
       name: Thermostat Snapshot Fan Mode
       description: "Input text for thermostat snapshot fan mode"
       selector:
         entity:
           domain: input_text
-    input_text_thermostat_snapshot_hvac_mode:
+    thermostat_snapshot_hvac_mode:
       name: Thermostat Snapshot HVAC Mode
       description: "Input text for thermostat snapshot HVAC mode"
       selector:
         entity:
           domain: input_text
-    input_text_thermostat_snapshot_preset_mode:
+    thermostat_snapshot_preset_mode:
       name: Thermostat Snapshot Preset Mode
       description: "Input text for thermostat snapshot preset mode"
       selector:
         entity:
           domain: input_text
-    input_text_thermostat_snapshot_hvac_action:
+    thermostat_snapshot_hvac_action:
       name: Thermostat Snapshot HVAC Action
       description: "Input text for thermostat snapshot HVAC action"
       selector:
         entity:
           domain: input_text
-    input_text_thermostat_snapshot_target_temp_low:
+    thermostat_snapshot_target_temp_low:
       name: Thermostat Snapshot Target Temp Low
       description: "Input text for thermostat snapshot target temp low"
       selector:
         entity:
           domain: input_text
-    input_text_thermostat_snapshot_target_temp_high:
+    thermostat_snapshot_target_temp_high:
       name: Thermostat Snapshot Target Temp High
       description: "Input text for thermostat snapshot target temp high"
       selector:
         entity:
           domain: input_text
-    input_text_thermostat_snapshot_temperature:
+    thermostat_snapshot_temperature:
       name: Thermostat Snapshot Temperature
       description: "Input text for thermostat snapshot temperature"
       selector:
         entity:
           domain: input_text
-    input_boolean_df_event_status:
+    df_event_status:
       name: DF Event Status
       description: "Input boolean to indicate the status of DF event"
       selector:
         entity:
           domain: input_boolean
-    input_boolean_df_restriction_status:
+    df_restriction_status:
       name: DF Restriction Status
       description: "Input boolean to indicate DF restriction status"
       selector:
         entity:
           domain: input_boolean
-    input_boolean_climate_snapshot:
+    enable_climate_snapshot:
       name: Climate Snapshot
       description: "Input boolean to indicate the climate snapshot status"
       selector:
         entity:
           domain: input_boolean
-    input_boolean_set_df_conditions:
+    set_df_conditions:
       name: Set DF Conditions
       description: "Input boolean to enable DF conditions"
       selector:
         entity:
           domain: input_boolean
-    input_boolean_df_conditions_set:
+    df_conditions_set:
       name: DF Conditions Set
       description: "Input boolean to indicate DF conditions are set"
       selector:
         entity:
           domain: input_boolean
-    input_boolean_set_point_changed_on_device:
+    set_point_changed_on_device:
       name: Set Point Changed On Device
       description: "Input boolean to indicate if set point changed on device"
       selector:
@@ -205,75 +205,72 @@ mode: parallel
 trace:
   stored_traces: 20
 ```
+### Step III: Define the Blueprint triggers 
+Below are the triggers used in the BLUERINT:
+- By definition HA triggers are a "OR" coniditioned so when any of the following triggers turn on the automation - a specific aciton associated with that trigger is initiated. 
+- Refer to the working example of the [automation](/working%20df%20automation.yaml) for a automation format of the triggers
 
-Triggers used in the automation:
-```
+
+```yaml
 trigger:
   - platform: state
-    entity_id: calendar.df_weh
+    entity_id: !input calendar_df_weh
     from: "off"
     to: "on"
     id: start_df_event
     alias: Calendar event for DF turns on
+  # turns on 
   - platform: state
-    entity_id:
-      - input_boolean.df_event_status
+    entity_id: df_event_status
     from: "off"
     to: "on"
     id: df_event_started
     alias: DF event started - take snapshot, restrict UI
   - platform: state
-    entity_id:
-      - input_boolean.climate_snapshot
+    entity_id: !input enable_climate_snapshot
     from: "off"
     to: "on"
     id: take climate snapshot
     alias: Take snapshot of climate conditions prior to DF event
   - platform: state
-    entity_id:
-      - input_boolean.set_point_changed_on_device
+    entity_id: !input set_point_changed_on_device
     to: "on"
     id: Occupant Overrides On Device
     from: "off"
   - platform: state
-    entity_id: calendar.df_weh
+    entity_id: !input calendar_df_weh
     from: "on"
     to: "off"
     id: df_event_ended
     alias: Calendar event for DF turns off
   - platform: state
-    entity_id:
-      - input_boolean.df_restriction_status
+    entity_id: !input df_restriction_status
     from: "on"
     to: "off"
     id: Occupant Overrides In App
     alias: Occupant Override In App
   - platform: state
-    entity_id:
-      - climate.thermostat
+    entity_id: !input climate_thermostat
     attribute: temperature
     alias: Occupant On Device Override - Target Temperature CHANGES
     id: Occupant On Device Override - Target Temperature
   - platform: state
-    entity_id:
-      - climate.thermostat
+    entity_id: !input climate_thermostat
     attribute: target_temp_high
     alias: Occupant On Device Override - Target High Temp CHANGES
     id: Occupant On Device Override - Target High Temp
   - platform: state
-    entity_id:
-      - climate.thermostat
+    entity_id: !input climate_thermostat
     attribute: target_temp_low
     alias: Occupant On Device Override - Target Low Temp CHANGES
     id: Occupant On Device Override - Target Low Temp
   - platform: state
-    entity_id:
-      - input_boolean.set_df_conditions
+    entity_id: !input set_df_conditions
     to: "on"
     id: Enable DF conditions
     from: "off"
 ```
-### Step III: DEFINE THE VARIABLES BASED ON THE INPUTS, TO USE INPUTS IN TEMPLATES
+### Step IV: DEFINE THE VARIABLES BASED ON THE INPUTS, TO USE INPUTS IN TEMPLATES
 
 As explained, in the official schema [here](https://www.home-assistant.io/docs/blueprint/schema/#blueprint-inputs-in-templates) 
 
@@ -291,3 +288,11 @@ blueprint:
     snapshot_thermostat: !input climate_thermostat_snapshot
 
 ```
+Step V: DEFINE THE ACTIONS OF THE BLUEPRINT/AUTOMATION
+
+### Step VI: BLUEPRINT/AUTOMATION MODE
+- Note on automation mode: 
+    
+  - By choice the automation is designed to run in parallel so any of the triggers at can turn true simultaneously. So, extra checks have been placed for cascading triggers to have appropriate cascading actions and more importantly not do anything to the thermostat conditions outside of the scheduled DF event. 
+
+
