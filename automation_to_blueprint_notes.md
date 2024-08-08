@@ -288,7 +288,45 @@ blueprint:
     snapshot_thermostat: !input climate_thermostat_snapshot
 
 ```
-Step V: DEFINE THE ACTIONS OF THE BLUEPRINT/AUTOMATION
+### Step V: DEFINE THE ACTIONS OF THE BLUEPRINT/AUTOMATION
+This step is quite dense. Take time to understand the logic
+
+1. Always trigger the action that defines DF conditions
+```yaml 
+blueprint:
+  name: "DF sequence of Operation - Full Cycle"
+  description: "DF sequence of Operation - Full Cycle"
+  domain: automation
+  input:
+  ...
+  # refer to step II
+  variables:
+    # refer to step IV
+  action:
+    - variables:
+      t_delta: |-
+        {% if is_state(df_calendar, 'on') %}
+          {{ float((state_attr(df_calendar, 'description') | from_json)['T_delta'], 0)  }}
+        {% else %}
+          0
+        {% endif %}
+      season: |-
+        {% if is_state(df_calendar, 'on') %}
+          {{ (state_attr(df_calendar, 'description') | from_json)['season']  }}
+        {% else %}
+          {{ '' }}
+        {% endif %}
+      df_delta_multiplier: |-
+        {% if is_state(df_calendar, 'on') %}
+          {% if (state_attr(df_calendar, 'description') | from_json)['season'] == 'cooling' %}
+            {{ float(1, 0) }}
+          {% elif (state_attr(df_calendar, 'description') | from_json)['season'] == 'heating' %} 
+            {{ float(-1, 0) }}
+          {% else %}
+              0
+          {% endif %}
+        {% endif %}
+```
 
 ### Step VI: BLUEPRINT/AUTOMATION MODE
 - Note on automation mode: 
