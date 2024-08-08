@@ -73,5 +73,204 @@ These Toggle helper entities are used as triggers for the automation that execut
 
 1. input_boolean.thermostat_set_point_changed_on_device
 
+## Blueprint - Stepwise build out
 
-### 
+### Step I: ADD BASIC BLUEPRINT METADATA
+
+```yaml
+blueprint:
+  name: DF sequence of Operation - Full Cycle
+  description: This blueprint helps user create an automation for an automated DF event for a thermostat in a house
+  domain: automation
+```
+
+### Step II: DEFINE THE CONFIGURABLE PARTS AS INPUTS
+
+Based on the entities listed above, below are the input for the blueprint
+
+```yaml
+blueprint:
+  name: "DF sequence of Operation - Full Cycle"
+  description: "DF sequence of Operation - Full Cycle"
+  domain: automation
+  input:
+    calendar_df_weh:
+      name: Calendar DF WEH
+      description: "The calendar entity that triggers DF events"
+      selector:
+        device:
+            entity:
+            domain: calendar
+    climate_thermostat:
+      name: Climate Thermostat
+      description: "Thermostat entity"
+      selector:
+        entity:
+          domain: climate
+    climate_thermostat_snapshot:
+      name: Climate Thermostat Snapshot
+      description: "Thermostat snapshot entity"
+      selector:
+        entity:
+          domain: climate
+    input_boolean_set_df_conditions:
+      name: Set DF Conditions
+      description: "Input boolean to enable DF conditions"
+      selector:
+        entity:
+          domain: input_boolean
+    input_text_thermostat_snapshot_fan_mode:
+      name: Thermostat Snapshot Fan Mode
+      description: "Input text for thermostat snapshot fan mode"
+      selector:
+        entity:
+          domain: input_text
+    input_text_thermostat_snapshot_hvac_mode:
+      name: Thermostat Snapshot HVAC Mode
+      description: "Input text for thermostat snapshot HVAC mode"
+      selector:
+        entity:
+          domain: input_text
+    input_text_thermostat_snapshot_preset_mode:
+      name: Thermostat Snapshot Preset Mode
+      description: "Input text for thermostat snapshot preset mode"
+      selector:
+        entity:
+          domain: input_text
+    input_text_thermostat_snapshot_hvac_action:
+      name: Thermostat Snapshot HVAC Action
+      description: "Input text for thermostat snapshot HVAC action"
+      selector:
+        entity:
+          domain: input_text
+    input_text_thermostat_snapshot_target_temp_low:
+      name: Thermostat Snapshot Target Temp Low
+      description: "Input text for thermostat snapshot target temp low"
+      selector:
+        entity:
+          domain: input_text
+    input_text_thermostat_snapshot_target_temp_high:
+      name: Thermostat Snapshot Target Temp High
+      description: "Input text for thermostat snapshot target temp high"
+      selector:
+        entity:
+          domain: input_text
+    input_text_thermostat_snapshot_temperature:
+      name: Thermostat Snapshot Temperature
+      description: "Input text for thermostat snapshot temperature"
+      selector:
+        entity:
+          domain: input_text
+    input_boolean_df_event_status:
+      name: DF Event Status
+      description: "Input boolean to indicate the status of DF event"
+      selector:
+        entity:
+          domain: input_boolean
+    input_boolean_df_restriction_status:
+      name: DF Restriction Status
+      description: "Input boolean to indicate DF restriction status"
+      selector:
+        entity:
+          domain: input_boolean
+    input_boolean_climate_snapshot:
+      name: Climate Snapshot
+      description: "Input boolean to indicate the climate snapshot status"
+      selector:
+        entity:
+          domain: input_boolean
+    input_boolean_set_df_conditions:
+      name: Set DF Conditions
+      description: "Input boolean to enable DF conditions"
+      selector:
+        entity:
+          domain: input_boolean
+    input_boolean_df_conditions_set:
+      name: DF Conditions Set
+      description: "Input boolean to indicate DF conditions are set"
+      selector:
+        entity:
+          domain: input_boolean
+    input_boolean_set_point_changed_on_device:
+      name: Set Point Changed On Device
+      description: "Input boolean to indicate if set point changed on device"
+      selector:
+        entity:
+          domain: input_boolean
+variables: {}
+trigger: []
+condition: []
+action: []
+mode: parallel
+trace:
+  stored_traces: 20
+```
+
+Triggers used in the automation:
+```
+trigger:
+  - platform: state
+    entity_id: calendar.df_weh
+    from: "off"
+    to: "on"
+    id: start_df_event
+    alias: Calendar event for DF turns on
+  - platform: state
+    entity_id:
+      - input_boolean.df_event_status
+    from: "off"
+    to: "on"
+    id: df_event_started
+    alias: DF event started - take snapshot, restrict UI
+  - platform: state
+    entity_id:
+      - input_boolean.climate_snapshot
+    from: "off"
+    to: "on"
+    id: take climate snapshot
+    alias: Take snapshot of climate conditions prior to DF event
+  - platform: state
+    entity_id:
+      - input_boolean.set_point_changed_on_device
+    to: "on"
+    id: Occupant Overrides On Device
+    from: "off"
+  - platform: state
+    entity_id: calendar.df_weh
+    from: "on"
+    to: "off"
+    id: df_event_ended
+    alias: Calendar event for DF turns off
+  - platform: state
+    entity_id:
+      - input_boolean.df_restriction_status
+    from: "on"
+    to: "off"
+    id: Occupant Overrides In App
+    alias: Occupant Override In App
+  - platform: state
+    entity_id:
+      - climate.thermostat
+    attribute: temperature
+    alias: Occupant On Device Override - Target Temperature CHANGES
+    id: Occupant On Device Override - Target Temperature
+  - platform: state
+    entity_id:
+      - climate.thermostat
+    attribute: target_temp_high
+    alias: Occupant On Device Override - Target High Temp CHANGES
+    id: Occupant On Device Override - Target High Temp
+  - platform: state
+    entity_id:
+      - climate.thermostat
+    attribute: target_temp_low
+    alias: Occupant On Device Override - Target Low Temp CHANGES
+    id: Occupant On Device Override - Target Low Temp
+  - platform: state
+    entity_id:
+      - input_boolean.set_df_conditions
+    to: "on"
+    id: Enable DF conditions
+    from: "off"
+```
+
