@@ -273,4 +273,21 @@ trigger:
     id: Enable DF conditions
     from: "off"
 ```
+### Step III: DEFINE THE VARIABLES BASED ON THE INPUTS, TO USE INPUTS IN TEMPLATES
 
+As explained, in the official schema [here](https://www.home-assistant.io/docs/blueprint/schema/#blueprint-inputs-in-templates) 
+
+```yaml 
+blueprint:
+  name: "DF sequence of Operation - Full Cycle"
+  description: "DF sequence of Operation - Full Cycle"
+  domain: automation
+  input:
+  ...
+  # refer to step II
+  variables:
+    df_calendar: !input calendar_df_weh
+    real_thermostat: !input climate_thermostat
+    snapshot_thermostat: !input climate_thermostat_snapshot
+
+```
