@@ -221,7 +221,7 @@ trigger:
     alias: Calendar event for DF turns on
   # turns on 
   - platform: state
-    entity_id: df_event_status
+    entity_id: !input df_event_status
     from: "off"
     to: "on"
     id: df_event_started
@@ -291,42 +291,106 @@ blueprint:
 ### Step V: DEFINE THE ACTIONS OF THE BLUEPRINT/AUTOMATION
 This step is quite dense. Take time to understand the logic
 
-1. Always trigger the action that defines DF conditions
-```yaml 
-blueprint:
-  name: "DF sequence of Operation - Full Cycle"
-  description: "DF sequence of Operation - Full Cycle"
-  domain: automation
-  input:
-  ...
-  # refer to step II
-  variables:
-    # refer to step IV
-  action:
-    - variables:
-      t_delta: |-
-        {% if is_state(df_calendar, 'on') %}
-          {{ float((state_attr(df_calendar, 'description') | from_json)['T_delta'], 0)  }}
-        {% else %}
-          0
-        {% endif %}
-      season: |-
-        {% if is_state(df_calendar, 'on') %}
-          {{ (state_attr(df_calendar, 'description') | from_json)['season']  }}
-        {% else %}
-          {{ '' }}
-        {% endif %}
-      df_delta_multiplier: |-
-        {% if is_state(df_calendar, 'on') %}
-          {% if (state_attr(df_calendar, 'description') | from_json)['season'] == 'cooling' %}
-            {{ float(1, 0) }}
-          {% elif (state_attr(df_calendar, 'description') | from_json)['season'] == 'heating' %} 
-            {{ float(-1, 0) }}
+1. Always trigger the action that defines DF conditions 
+    - T_delta: this is DF's T_delta in positive integer (>0)
+    - Season: Check for heating or cooling season - based on that if some house has season inappropriate mode, dont do DF
+    - df_delta_multiplier: this is used for converting T_delta into season appropriate T_delta (set up for cooling and set back for heating ) 
+  ```yaml 
+  blueprint:
+    name: "DF sequence of Operation - Full Cycle"
+    description: "DF sequence of Operation - Full Cycle"
+    domain: automation
+    input:
+    ...
+    # refer to step II
+    variables:
+      # refer to step IV
+    action:
+      - variables:
+        t_delta: |-
+          {% if is_state(df_calendar, 'on') %}
+            {{ float((state_attr(df_calendar, 'description') | from_json)['T_delta'], 0)  }}
           {% else %}
-              0
+            0
           {% endif %}
-        {% endif %}
-```
+        season: |-
+          {% if is_state(df_calendar, 'on') %}
+            {{ (state_attr(df_calendar, 'description') | from_json)['season']  }}
+          {% else %}
+            {{ '' }}
+          {% endif %}
+        df_delta_multiplier: |-
+          {% if is_state(df_calendar, 'on') %}
+            {% if (state_attr(df_calendar, 'description') | from_json)['season'] == 'cooling' %}
+              {{ float(1, 0) }}
+            {% elif (state_attr(df_calendar, 'description') | from_json)['season'] == 'heating' %} 
+              {{ float(-1, 0) }}
+            {% else %}
+                0
+            {% endif %}
+          {% endif %}
+  ```
+
+2. Choose trigger appropriate action - These are conditional cascading actions based on specific trigger(s)
+
+      ```yaml 
+      blueprint:
+        name: "DF sequence of Operation - Full Cycle"
+        description: "DF sequence of Operation - Full Cycle"
+        domain: automation
+        input:
+        ...
+        # refer to step II
+        variables:
+          # refer to step IV
+        action:
+          - variables:
+          # follow step 1. 
+          - choose:
+          # contd. below for each action choice
+      ```    
+    1. When the trigger_id is `start_df_event`:
+      This action turn on the boolean `df_event_status` based on HA calendar entity changing its state `off` to `on` which is the state-transition trigger `start_df_event`
+
+        ```yaml
+              - conditions:
+                - condition: trigger
+                  id:
+                    - start_df_event
+              sequence:
+                - metadata: {}
+                  data: {}
+                  target:
+                    entity_id: !input df_event_status
+                  action: input_boolean.turn_on
+              alias: Start DF event when calendar event is live        
+        ```
+    2. When the trigger_id is `df_event_started`:
+      This action turn on the booleans for setting the `UI restriction` and taking `snapshot of climate` entities. 
+        > Note: the scene.take_snapshot does not work because 
+        > - in case of preset_mode: `temp`, ecobee climate entity >> doesn't accept it as machine readable attribute, instead >> `temp` can only be based on service(now action) call.
+        > - scene snapshot are deleted on a HA restart - this is not "acceptable"
+        ```yaml
+              - conditions:
+                - condition: trigger
+                  id:
+                    - df_event_started
+              sequence:
+                - metadata: {}
+                  data: {}
+                  target:
+                    entity_id:
+                      - !input df_restriction_status
+                      - !input enable_climate_snapshot
+                  action: input_boolean.turn_on
+              alias: Turns on snapshot, restriction booleans     
+        ```
+    3. 
+
+
+
+
+
 
 ### Step VI: BLUEPRINT/AUTOMATION MODE
 - Note on automation mode: 
