@@ -1,489 +1,588 @@
-alias: DF sequence of Operation - Full Cycle
-description: DF sequence of Operation - Full Cycle
-trigger:
-  - platform: state
-    entity_id: calendar.df_weh
-    from: "off"
-    to: "on"
-    id: start_df_event
-    alias: Calendar event for DF turns on
-  - platform: state
-    entity_id:
-      - input_boolean.df_event_status
-    from: "off"
-    to: "on"
-    id: df_event_started
-    alias: DF event started - take snapshot, restrict UI
-  - platform: state
-    entity_id:
-      - input_boolean.climate_snapshot
-    from: "off"
-    to: "on"
-    id: take climate snapshot
-    alias: Take snapshot of climate conditions prior to DF event
-  - platform: state
-    entity_id:
-      - input_boolean.set_point_changed_on_device
-    to: "on"
-    id: Occupant Overrides On Device
-    from: "off"
-  - platform: state
-    entity_id: calendar.df_weh
-    from: "on"
-    to: "off"
-    id: df_event_ended
-    alias: Calendar event for DF turns off
-  - platform: state
-    entity_id:
-      - input_boolean.df_restriction_status
-    from: "on"
-    to: "off"
-    id: Occupant Overrides In App
-    alias: Occupant Override In App
-  - platform: state
-    entity_id:
-      - climate.thermostat
-    attribute: temperature
-    alias: Occupant On Device Override - Target Temperature CHANGES
-    id: Occupant On Device Override - Target Temperature
-  - platform: state
-    entity_id:
-      - climate.thermostat
-    attribute: target_temp_high
-    alias: Occupant On Device Override - Target High Temp CHANGES
-    id: Occupant On Device Override - Target High Temp
-  - platform: state
-    entity_id:
-      - climate.thermostat
-    attribute: target_temp_low
-    alias: Occupant On Device Override - Target Low Temp CHANGES
-    id: Occupant On Device Override - Target Low Temp
-  - platform: state
-    entity_id:
-      - input_boolean.set_df_conditions
-    to: "on"
-    id: Enable DF conditions
-    from: "off"
-condition: []
-action:
-  - variables:
-      t_delta: |-
-        {% if is_state('calendar.df_weh', 'on') %}
-          {{ float((state_attr('calendar.df_weh', 'description') | from_json)['T_delta'], 0)  }}
-        {% else %}
-          0
-        {% endif %}
-      season: |-
-        {% if is_state('calendar.df_weh', 'on') %}
-          {{ (state_attr('calendar.df_weh', 'description') | from_json)['season']  }}
-        {% else %}
-          {{ '' }}
-        {% endif %}
-      df_delta_multiplier: |-
-        {% if is_state('calendar.df_weh', 'on') %}
-          {% if (state_attr('calendar.df_weh', 'description') | from_json)['season'] == 'cooling' %}
-            {{ float(1, 0) }}
-          {% elif (state_attr('calendar.df_weh', 'description') | from_json)['season'] == 'heating' %} 
-            {{ float(-1, 0) }}
-          {% else %}
+  blueprint:
+    name: "DF sequence of Operation - Full Cycle"
+    description: "DF sequence of Operation - Full Cycle"
+    domain: automation
+    input:
+      calendar_df_weh:
+        name: Calendar DF WEH
+        description: "The calendar entity that triggers DF events"
+        selector:
+          device:
+              entity:
+              domain: calendar
+      climate_thermostat:
+        name: Climate Thermostat
+        description: "Thermostat entity"
+        selector:
+          entity:
+            domain: climate
+      climate_thermostat_snapshot:
+        name: Climate Thermostat Snapshot
+        description: "Thermostat snapshot entity"
+        selector:
+          entity:
+            domain: climate
+      set_df_conditions:
+        name: Set DF Conditions
+        description: "Input boolean to enable DF conditions"
+        selector:
+          entity:
+            domain: input_boolean
+      thermostat_snapshot_fan_mode:
+        name: Thermostat Snapshot Fan Mode
+        description: "Input text for thermostat snapshot fan mode"
+        selector:
+          entity:
+            domain: input_text
+      thermostat_snapshot_hvac_mode:
+        name: Thermostat Snapshot HVAC Mode
+        description: "Input text for thermostat snapshot HVAC mode"
+        selector:
+          entity:
+            domain: input_text
+      thermostat_snapshot_preset_mode:
+        name: Thermostat Snapshot Preset Mode
+        description: "Input text for thermostat snapshot preset mode"
+        selector:
+          entity:
+            domain: input_text
+      thermostat_snapshot_hvac_action:
+        name: Thermostat Snapshot HVAC Action
+        description: "Input text for thermostat snapshot HVAC action"
+        selector:
+          entity:
+            domain: input_text
+      thermostat_snapshot_target_temp_low:
+        name: Thermostat Snapshot Target Temp Low
+        description: "Input text for thermostat snapshot target temp low"
+        selector:
+          entity:
+            domain: input_text
+      thermostat_snapshot_target_temp_high:
+        name: Thermostat Snapshot Target Temp High
+        description: "Input text for thermostat snapshot target temp high"
+        selector:
+          entity:
+            domain: input_text
+      thermostat_snapshot_temperature:
+        name: Thermostat Snapshot Temperature
+        description: "Input text for thermostat snapshot temperature"
+        selector:
+          entity:
+            domain: input_text
+      df_event_status:
+        name: DF Event Status
+        description: "Input boolean to indicate the status of DF event"
+        selector:
+          entity:
+            domain: input_boolean
+      df_restriction_status:
+        name: DF Restriction Status
+        description: "Input boolean to indicate DF restriction status"
+        selector:
+          entity:
+            domain: input_boolean
+      enable_climate_snapshot:
+        name: Climate Snapshot
+        description: "Input boolean to indicate the climate snapshot status"
+        selector:
+          entity:
+            domain: input_boolean
+      set_df_conditions:
+        name: Set DF Conditions
+        description: "Input boolean to enable DF conditions"
+        selector:
+          entity:
+            domain: input_boolean
+      df_conditions_set:
+        name: DF Conditions Set
+        description: "Input boolean to indicate DF conditions are set"
+        selector:
+          entity:
+            domain: input_boolean
+      set_point_changed_on_device:
+        name: Set Point Changed On Device
+        description: "Input boolean to indicate if set point changed on device"
+        selector:
+          entity:
+            domain: input_boolean
+    variables: 
+      df_calendar: !input calendar_df_weh
+      real_thermostat: !input climate_thermostat
+      snapshot_thermostat: !input climate_thermostat_snapshot
+    trigger:
+      - platform: state
+        entity_id: !input calendar_df_weh
+        from: "off"
+        to: "on"
+        id: start_df_event
+        alias: Calendar event for DF turns on
+      # turns on 
+      - platform: state
+        entity_id: !input df_event_status
+        from: "off"
+        to: "on"
+        id: df_event_started
+        alias: DF event started - take snapshot, restrict UI
+      - platform: state
+        entity_id: !input enable_climate_snapshot
+        from: "off"
+        to: "on"
+        id: take climate snapshot
+        alias: Take snapshot of climate conditions prior to DF event
+      - platform: state
+        entity_id: !input set_point_changed_on_device
+        to: "on"
+        id: Occupant Overrides On Device
+        from: "off"
+      - platform: state
+        entity_id: !input calendar_df_weh
+        from: "on"
+        to: "off"
+        id: df_event_ended
+        alias: Calendar event for DF turns off
+      - platform: state
+        entity_id: !input df_restriction_status
+        from: "on"
+        to: "off"
+        id: Occupant Overrides In App
+        alias: Occupant Override In App
+      - platform: state
+        entity_id: !input climate_thermostat
+        attribute: temperature
+        alias: Occupant On Device Override - Target Temperature CHANGES
+        id: Occupant On Device Override - Target Temperature
+      - platform: state
+        entity_id: !input climate_thermostat
+        attribute: target_temp_high
+        alias: Occupant On Device Override - Target High Temp CHANGES
+        id: Occupant On Device Override - Target High Temp
+      - platform: state
+        entity_id: !input climate_thermostat
+        attribute: target_temp_low
+        alias: Occupant On Device Override - Target Low Temp CHANGES
+        id: Occupant On Device Override - Target Low Temp
+      - platform: state
+        entity_id: !input set_df_conditions
+        to: "on"
+        id: Enable DF conditions
+        from: "off"
+
+    action:
+      - variables:
+          t_delta: |-
+            {% if is_state(df_calendar, 'on') %}
+              {{ float((state_attr(df_calendar, 'description') | from_json)['T_delta'], 0)  }}
+            {% else %}
               0
-          {% endif %}
-        {% endif %}
-  - choose:
-      - conditions:
-          - condition: trigger
-            id:
-              - start_df_event
-        sequence:
-          - metadata: {}
-            data: {}
-            target:
-              entity_id: input_boolean.df_event_status
-            action: input_boolean.turn_on
-        alias: Start DF event when calendar event is live
-      - conditions:
-          - condition: trigger
-            id:
-              - df_event_started
-        sequence:
-          - metadata: {}
-            data: {}
-            target:
-              entity_id:
-                - input_boolean.df_restriction_status
-                - input_boolean.climate_snapshot
-            action: input_boolean.turn_on
-        alias: Turns on snapshot, restriction booleans
-      - conditions:
-          - condition: and
-            conditions:
+            {% endif %}
+          season: |-
+            {% if is_state(df_calendar, 'on') %}
+              {{ (state_attr(df_calendar, 'description') | from_json)['season']  }}
+            {% else %}
+              {{ '' }}
+            {% endif %}
+          df_delta_multiplier: |-
+            {% if is_state(df_calendar, 'on') %}
+              {% if (state_attr(df_calendar, 'description') | from_json)['season'] == 'cooling' %}
+                {{ float(1, 0) }}
+              {% elif (state_attr(df_calendar, 'description') | from_json)['season'] == 'heating' %} 
+                {{ float(-1, 0) }}
+              {% else %}
+                  0
+              {% endif %}
+            {% endif %}
+      - choose:
+          - conditions:
               - condition: trigger
                 id:
-                  - take climate snapshot
-              - condition: state
-                entity_id: input_boolean.df_event_status
-                state: "on"
-            alias: Confirms DF event is on & snapshot is enabled
-        sequence:
-          - metadata: {}
-            data:
-              value: "{{state_attr('climate.thermostat', 'fan_mode')}}"
-            target:
-              entity_id: input_text.thermostat_snapshot_fan_mode
-            action: input_text.set_value
-          - metadata: {}
-            data:
-              value: "{{ states('climate.thermostat') }} "
-            target:
-              entity_id: input_text.thermostat_snapshot_hvac_mode
-            action: input_text.set_value
-          - metadata: {}
-            data:
-              value: "{{ state_attr('climate.thermostat', 'preset_mode')}}"
-            target:
-              entity_id: input_text.thermostat_snapshot_preset_mode
-            action: input_text.set_value
-          - metadata: {}
-            data:
-              value: "{{ state_attr('climate.thermostat', 'hvac_action')}}"
-            target:
-              entity_id: input_text.thermostat_snapshot_hvac_action
-            action: input_text.set_value
-          - choose:
-              - conditions:
-                  - condition: state
-                    entity_id: climate.thermostat
-                    state: heat_cool
-                    alias: Confirms the thermostat is in dual mode (heat_cool)
-                sequence:
-                  - metadata: {}
-                    data:
-                      value: >
-                        {{ float(state_attr('climate.thermostat',
-                        'target_temp_low'),None) }}
-                    target:
-                      entity_id: input_text.thermostat_snapshot_target_temp_low
-                    action: input_text.set_value
-                  - metadata: {}
-                    data:
-                      value: >
-                        {{ float(state_attr('climate.thermostat',
-                        'target_temp_high'), None) }}
-                    target:
-                      entity_id: input_text.thermostat_snapshot_target_temp_high
-                    action: input_text.set_value
-                  - metadata: {}
-                    data:
-                      value: |
-                        {{ ' ' }}
-                    target:
-                      entity_id: input_text.thermostat_snapshot_temperature
-                    action: input_text.set_value
-              - conditions:
-                  - alias: Confirms the thermostat is in single mode (heat/cool)
-                    condition: or
-                    conditions:
-                      - condition: state
-                        entity_id: climate.thermostat
-                        state: heat
-                      - condition: state
-                        entity_id: climate.thermostat
-                        state: cool
-                sequence:
-                  - metadata: {}
-                    data:
-                      value: >
-                        {{ float(state_attr('climate.thermostat',
-                        'temperature'), None) }}
-                    target:
-                      entity_id: input_text.thermostat_snapshot_temperature
-                    action: input_text.set_value
-                  - metadata: {}
-                    data:
-                      value: |
-                        {{ ' ' }}
-                    target:
-                      entity_id: input_text.thermostat_snapshot_target_temp_low
-                    action: input_text.set_value
-                  - metadata: {}
-                    data:
-                      value: |
-                        {{ ' ' }}
-                    target:
-                      entity_id: input_text.thermostat_snapshot_target_temp_high
-                    action: input_text.set_value
-            alias: Gets Thermostat set point(s) depending on the climate mode
-          - metadata: {}
-            data: {}
-            target:
-              entity_id: input_boolean.set_df_conditions
-            alias: Turns boolean on to set DF conditions next
-            action: input_boolean.turn_on
-        alias: Sets snapshot entities in helper texts
-      - conditions:
-          - condition: and
-            conditions:
+                  - start_df_event
+            sequence:
+              - metadata: {}
+                data: {}
+                target:
+                  entity_id: !input df_event_status
+                action: input_boolean.turn_on
+            alias: Start DF event when calendar event is live
+          - conditions:
               - condition: trigger
                 id:
-                  - Enable DF conditions
-              - condition: state
-                entity_id: input_boolean.df_event_status
-                state: "on"
-              - condition: state
-                entity_id: input_boolean.climate_snapshot
-                state: "on"
-              - condition: state
-                entity_id: input_boolean.set_df_conditions
-                state: "on"
-        sequence:
-          - choose:
-              - conditions:
+                  - df_event_started
+            sequence:
+              - metadata: {}
+                data: {}
+                target:
+                  entity_id:
+                    - !input df_restriction_status
+                    - !input enable_climate_snapshot
+                action: input_boolean.turn_on
+            alias: Turns on snapshot, restriction booleans
+          - conditions:
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - take climate snapshot
                   - condition: state
-                    entity_id: climate.thermostat
-                    state: heat_cool
-                sequence:
-                  - metadata: {}
-                    data: |
-                      {
-                        "target_temp_high": {{ float(state_attr('climate.thermostat_snapshot', 'target_temp_high')  + t_delta, None)}},
-                        "target_temp_low": {{ float(state_attr('climate.thermostat_snapshot', 'target_temp_low') - t_delta, None) }}
-                      }
-                    target:
-                      entity_id: climate.thermostat
-                    alias: Sets Dual mode HVAC conditions
-                    action: climate.set_temperature
-                  - delay:
-                      hours: 0
-                      minutes: 0
-                      seconds: 5
-                      milliseconds: 0
-                  - metadata: {}
-                    data: {}
-                    target:
-                      entity_id: input_boolean.df_conditions_set
-                    alias: Enable boolean to indicate DF conditions are set
-                    action: input_boolean.turn_on
-                alias: Confirms dual mode and offsets both setpoints
-              - conditions:
-                  - alias: Check HVAC mode is heating or cooling and DF season
-                    condition: or
-                    conditions:
-                      - condition: and
+                    entity_id: !input df_event_status
+                    state: "on"
+                alias: Confirms DF event is on & snapshot is enabled
+            sequence:
+              - metadata: {}
+                data:
+                  value: "{{state_attr(real_thermostat, 'fan_mode')}}"
+                target:
+                  entity_id: !input thermostat_snapshot_fan_mode
+                action: input_text.set_value
+              - metadata: {}
+                data:
+                  value: "{{ states(real_thermostat) }} "
+                target:
+                  entity_id: !input thermostat_snapshot_hvac_mode
+                action: input_text.set_value
+              - metadata: {}
+                data:
+                  value: "{{ state_attr(real_thermostat, 'preset_mode')}}"
+                target:
+                  entity_id: !input thermostat_snapshot_preset_mode
+                action: input_text.set_value
+              - metadata: {}
+                data:
+                  value: "{{ state_attr(real_thermostat, 'hvac_action')}}"
+                target:
+                  entity_id: !input thermostat_snapshot_hvac_action
+                action: input_text.set_value
+              - choose:
+                  - conditions:
+                      - condition: state
+                        entity_id: !input climate_thermostat
+                        state: heat_cool
+                        alias: Confirms the thermostat is in dual mode (heat_cool)
+                    sequence:
+                      - metadata: {}
+                        data:
+                          value: >
+                            {{ float(state_attr(real_thermostat,
+                            'target_temp_low'),None) }}
+                        target:
+                          entity_id: !input thermostat_snapshot_target_temp_low
+                        action: input_text.set_value
+                      - metadata: {}
+                        data:
+                          value: >
+                            {{ float(state_attr(real_thermostat,
+                            'target_temp_high'), None) }}
+                        target:
+                          entity_id: !input thermostat_snapshot_target_temp_high
+                        action: input_text.set_value
+                      - metadata: {}
+                        data:
+                          value: |
+                            {{ ' ' }}
+                        target:
+                          entity_id: !input thermostat_snapshot_temperature
+                        action: input_text.set_value
+                  - conditions:
+                      - alias: Confirms the thermostat is in single mode (heat/cool)
+                        condition: or
                         conditions:
                           - condition: state
-                            entity_id: climate.thermostat
+                            entity_id: !input climate_thermostat
                             state: heat
-                          - condition: template
-                            value_template: "{{ season == 'heating'}} "
-                      - condition: and
-                        conditions:
                           - condition: state
-                            entity_id: climate.thermostat
+                            entity_id: !input climate_thermostat
                             state: cool
-                          - condition: template
-                            value_template: "{{ season == 'cooling'}} "
-                sequence:
-                  - metadata: {}
-                    data: |
-                      {
-                        "temperature": {{ float(state_attr('climate.thermostat_snapshot', 'temperature') + df_delta_multiplier*t_delta, None)}},
-                      }
-                    target:
-                      entity_id: climate.thermostat
-                    action: climate.set_temperature
-                  - delay:
-                      hours: 0
-                      minutes: 0
-                      seconds: 5
-                      milliseconds: 0
-                  - metadata: {}
-                    data: {}
-                    target:
-                      entity_id: input_boolean.df_conditions_set
-                    alias: Enable boolean to indicate DF conditions are set
-                    action: input_boolean.turn_on
-                alias: Confirms single mode and appropriate DF season
-        alias: Sets DF conditions
-      - conditions:
-          - condition: trigger
-            id:
-              - Occupant Overrides In App
-              - df_event_ended
-        sequence:
-          - choose:
-              - conditions:
-                  - alias: >-
-                      Confirms for UI restrictions, and not an On Device
-                      override
-                    condition: and
-                    conditions:
+                    sequence:
+                      - metadata: {}
+                        data:
+                          value: >
+                            {{ float(state_attr(real_thermostat,
+                            'temperature'), None) }}
+                        target:
+                          entity_id: !input thermostat_snapshot_temperature
+                        action: input_text.set_value
+                      - metadata: {}
+                        data:
+                          value: |
+                            {{ ' ' }}
+                        target:
+                          entity_id: !input thermostat_snapshot_target_temp_low
+                        action: input_text.set_value
+                      - metadata: {}
+                        data:
+                          value: |
+                            {{ ' ' }}
+                        target:
+                          entity_id: !input thermostat_snapshot_target_temp_high
+                        action: input_text.set_value
+                alias: Gets Thermostat set point(s) depending on the climate mode
+              - metadata: {}
+                data: {}
+                target:
+                  entity_id: !input set_df_conditions
+                alias: Turns boolean on to set DF conditions next
+                action: input_boolean.turn_on
+            alias: Sets snapshot entities in helper texts
+          - conditions:
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - Enable DF conditions
+                  - condition: state
+                    entity_id: !input df_event_status
+                    state: "on"
+                  - condition: state
+                    entity_id: !input enable_climate_snapshot
+                    state: "on"
+                  - condition: state
+                    entity_id: !input set_df_conditions
+                    state: "on"
+            sequence:
+              - choose:
+                  - conditions:
                       - condition: state
-                        entity_id:
-                          - input_boolean.df_event_status
-                          - input_boolean.climate_snapshot
-                          - input_boolean.df_conditions_set
-                        state: "on"
-                      - condition: state
-                        entity_id: input_boolean.set_point_changed_on_device
-                        state: "off"
-                sequence:
-                  - choose:
-                      - conditions:
-                          - condition: not
+                        entity_id: !input climate_thermostat
+                        state: heat_cool
+                    sequence:
+                      - metadata: {}
+                        data: |
+                          {
+                            "target_temp_high": {{ float(state_attr(snapshot_thermostat, 'target_temp_high')  + t_delta, None)}},
+                            "target_temp_low": {{ float(state_attr(snapshot_thermostat, 'target_temp_low') - t_delta, None) }}
+                          }
+                        target:
+                          entity_id: !input climate_thermostat
+                        alias: Sets Dual mode HVAC conditions
+                        action: climate.set_temperature
+                      - delay:
+                          hours: 0
+                          minutes: 0
+                          seconds: 5
+                          milliseconds: 0
+                      - metadata: {}
+                        data: {}
+                        target:
+                          entity_id: !input df_conditions_set
+                        alias: Enable boolean to indicate DF conditions are set
+                        action: input_boolean.turn_on
+                    alias: Confirms dual mode and offsets both setpoints
+                  - conditions:
+                      - alias: Check HVAC mode is heating or cooling and DF season
+                        condition: or
+                        conditions:
+                          - condition: and
                             conditions:
                               - condition: state
-                                entity_id: input_text.thermostat_snapshot_preset_mode
-                                state: temp
-                            alias: If Pre-DF climate conditions were on a schedule
-                        sequence:
-                          - metadata: {}
-                            data:
-                              entity_id: climate.thermostat
-                            action: ecobee.resume_program
-                          - metadata: {}
-                            data: {}
-                            target:
-                              entity_id:
-                                - input_boolean.df_event_status
-                                - input_boolean.df_restriction_status
-                                - input_boolean.set_df_conditions
-                                - input_boolean.df_conditions_set
-                                - input_boolean.climate_snapshot
-                                - input_boolean.set_point_changed_on_device
-                            action: input_boolean.turn_off
-                        alias: >-
-                          Confirms if Pre-DF climate conditions were on a
-                          schedule, resumes eocbee programs
-                      - conditions:
-                          - condition: state
-                            entity_id: input_text.thermostat_snapshot_preset_mode
-                            state: temp
-                        sequence:
-                          - alias: Based on thermostat hvac_mode - set DF conditions
-                            choose:
-                              - conditions:
-                                  - condition: state
-                                    entity_id: climate.thermostat
-                                    state: heat_cool
-                                    alias: Confirms Thermostat Dual HVAC mode
-                                sequence:
-                                  - metadata: {}
-                                    data: |
-                                      {
-                                        "target_temp_high": {{ float(state_attr('climate.thermostat_snapshot', 'target_temp_high'), None) }},
-                                        "target_temp_low": {{ float(state_attr('climate.thermostat_snapshot', 'target_temp_low'), None) }}
-                                      }  
-                                    target:
-                                      entity_id: climate.thermostat
-                                    action: climate.set_temperature
-                                  - metadata: {}
-                                    data: {}
-                                    target:
-                                      entity_id:
-                                        - input_boolean.df_event_status
-                                        - input_boolean.df_restriction_status
-                                        - input_boolean.set_df_conditions
-                                        - input_boolean.df_conditions_set
-                                        - input_boolean.climate_snapshot
-                                        - >-
-                                          input_boolean.set_point_changed_on_device
-                                    action: input_boolean.turn_off
-                              - conditions:
-                                  - condition: or
-                                    conditions:
-                                      - condition: state
-                                        entity_id: climate.thermostat
-                                        state: cool
-                                      - condition: state
-                                        entity_id: climate.thermostat
-                                        state: heat
-                                    alias: >-
-                                      Confirms the Thermostat Uni HVAC mode -
-                                      heating or cooling 
-                                sequence:
-                                  - metadata: {}
-                                    data: |
-                                      {
-                                        "temperature": {{ float(state_attr('climate.thermostat_snapshot', 'temperature'), None) }}
-                                      }
-                                    target:
-                                      entity_id: climate.thermostat
-                                    action: climate.set_temperature
-                                  - metadata: {}
-                                    data: {}
-                                    target:
-                                      entity_id:
-                                        - input_boolean.df_event_status
-                                        - input_boolean.df_restriction_status
-                                        - input_boolean.set_df_conditions
-                                        - input_boolean.df_conditions_set
-                                        - input_boolean.climate_snapshot
-                                        - >-
-                                          input_boolean.set_point_changed_on_device
-                                    action: input_boolean.turn_off
-        alias: >-
-          InApp Override detected - reset to prior Climate conditions and turn
-          off DF booleans
-      - conditions:
-          - condition: trigger
-            id:
-              - Occupant Overrides On Device
-        sequence:
-          - alias: Confirms on going DF event and turns it off
-            choose:
-              - conditions:
-                  - condition: state
-                    entity_id:
-                      - input_boolean.df_event_status
-                      - input_boolean.climate_snapshot
-                      - input_boolean.df_restriction_status
-                      - input_boolean.df_conditions_set
-                    state: "on"
-                sequence:
-                  - metadata: {}
-                    data: {}
-                    target:
-                      entity_id:
-                        - input_boolean.df_event_status
-                        - input_boolean.df_restriction_status
-                        - input_boolean.set_df_conditions
-                        - input_boolean.df_conditions_set
-                        - input_boolean.climate_snapshot
-                        - input_boolean.set_point_changed_on_device
-                    action: input_boolean.turn_off
-        alias: On Deivce Override detected - turn off DF booleans
-      - conditions:
-          - condition: and
-            conditions:
+                                entity_id: !input climate_thermostat
+                                state: heat
+                              - condition: template
+                                value_template: "{{ season == 'heating'}} "
+                          - condition: and
+                            conditions:
+                              - condition: state
+                                entity_id: !input climate_thermostat
+                                state: cool
+                              - condition: template
+                                value_template: "{{ season == 'cooling'}} "
+                    sequence:
+                      - metadata: {}
+                        data: |
+                          {
+                            "temperature": {{ float(state_attr(snapshot_thermostat, 'temperature') + df_delta_multiplier*t_delta, None)}},
+                          }
+                        target:
+                          entity_id: !input climate_thermostat
+                        action: climate.set_temperature
+                      - delay:
+                          hours: 0
+                          minutes: 0
+                          seconds: 5
+                          milliseconds: 0
+                      - metadata: {}
+                        data: {}
+                        target:
+                          entity_id: !input df_conditions_set
+                        alias: Enable boolean to indicate DF conditions are set
+                        action: input_boolean.turn_on
+                    alias: Confirms single mode and appropriate DF season
+            alias: Sets DF conditions
+          - conditions:
               - condition: trigger
                 id:
-                  - Occupant On Device Override - Target Temperature
-                  - Occupant On Device Override - Target High Temp
-                  - Occupant On Device Override - Target Low Temp
-            alias: Checks if one of the three set point attribute have changes
-        sequence:
-          - choose:
-              - conditions:
-                  - condition: state
-                    entity_id:
-                      - input_boolean.df_event_status
-                      - input_boolean.climate_snapshot
-                      - input_boolean.df_restriction_status
-                      - input_boolean.df_conditions_set
-                    state: "on"
-                sequence:
-                  - metadata: {}
-                    data: {}
-                    target:
-                      entity_id: input_boolean.set_point_changed_on_device
-                    action: input_boolean.turn_on
+                  - Occupant Overrides In App
+                  - df_event_ended
+            sequence:
+              - choose:
+                  - conditions:
+                      - alias: >-
+                          Confirms for UI restrictions, and not an On Device
+                          override
+                        condition: and
+                        conditions:
+                          - condition: state
+                            entity_id:
+                              - !input df_event_status
+                              - !input enable_climate_snapshot
+                              - !input df_conditions_set
+                            state: "on"
+                          - condition: state
+                            entity_id: !input set_point_changed_on_device
+                            state: "off"
+                    sequence:
+                      - choose:
+                          - conditions:
+                              - condition: not
+                                conditions:
+                                  - condition: state
+                                    entity_id: !input thermostat_snapshot_preset_mode
+                                    state: temp
+                                alias: If Pre-DF climate conditions were on a schedule
+                            sequence:
+                              - metadata: {}
+                                data:
+                                  entity_id: !input climate_thermostat
+                                action: ecobee.resume_program
+                              - metadata: {}
+                                data: {}
+                                target:
+                                  entity_id:
+                                    - !input df_event_status
+                                    - !input df_restriction_status
+                                    - !input set_df_conditions
+                                    - !input df_conditions_set
+                                    - !input enable_climate_snapshot
+                                    - !input set_point_changed_on_device
+                                action: input_boolean.turn_off
+                            alias: >-
+                              Confirms if Pre-DF climate conditions were on a
+                              schedule, resumes eocbee programs
+                          - conditions:
+                              - condition: state
+                                entity_id: !input thermostat_snapshot_preset_mode
+                                state: temp
+                            sequence:
+                              - alias: Based on thermostat hvac_mode - set DF conditions
+                                choose:
+                                  - conditions:
+                                      - condition: state
+                                        entity_id: !input climate_thermostat
+                                        state: heat_cool
+                                        alias: Confirms Thermostat Dual HVAC mode
+                                    sequence:
+                                      - metadata: {}
+                                        data: |
+                                          {
+                                            "target_temp_high": {{ float(state_attr(snapshot_thermostat, 'target_temp_high'), None) }},
+                                            "target_temp_low": {{ float(state_attr(snapshot_thermostat, 'target_temp_low'), None) }}
+                                          }  
+                                        target:
+                                          entity_id: !input climate_thermostat
+                                        action: climate.set_temperature
+                                      - metadata: {}
+                                        data: {}
+                                        target:
+                                          entity_id:
+                                            - !input df_event_status
+                                            - !input df_restriction_status
+                                            - !input set_df_conditions
+                                            - !input df_conditions_set
+                                            - !input enable_climate_snapshot
+                                            - !input set_point_changed_on_device
+                                        action: input_boolean.turn_off
+                                  - conditions:
+                                      - condition: or
+                                        conditions:
+                                          - condition: state
+                                            entity_id: !input climate_thermostat
+                                            state: cool
+                                          - condition: state
+                                            entity_id: !input climate_thermostat
+                                            state: heat
+                                        alias: >-
+                                          Confirms the Thermostat Uni HVAC mode -
+                                          heating or cooling 
+                                    sequence:
+                                      - metadata: {}
+                                        data: |
+                                          {
+                                            "temperature": {{ float(state_attr(snapshot_thermostat, 'temperature'), None) }}
+                                          }
+                                        target:
+                                          entity_id: !input climate_thermostat
+                                        action: climate.set_temperature
+                                      - metadata: {}
+                                        data: {}
+                                        target:
+                                          entity_id:
+                                            - !input df_event_status
+                                            - !input df_restriction_status
+                                            - !input set_df_conditions
+                                            - !input df_conditions_set
+                                            - !input enable_climate_snapshot
+                                            - !input set_point_changed_on_device
+                                        action: input_boolean.turn_off
             alias: >-
-              Confirms On going DF event and turns on the boolean for on device
-              override
-        alias: Detect set point changes when DF event is on
-variables:
-  calendar_entity:
-    - calendar.df_weh
+              InApp Override detected - reset to prior Climate conditions and turn
+              off DF booleans
+          - conditions:
+              - condition: trigger
+                id:
+                  - Occupant Overrides On Device
+            sequence:
+              - alias: Confirms on going DF event and turns it off
+                choose:
+                  - conditions:
+                      - condition: state
+                        entity_id:
+                          - !input df_event_status
+                          - !input enable_climate_snapshot
+                          - !input df_restriction_status
+                          - !input df_conditions_set
+                        state: "on"
+                    sequence:
+                      - metadata: {}
+                        data: {}
+                        target:
+                          entity_id:
+                            - !input df_event_status
+                            - !input df_restriction_status
+                            - !input set_df_conditions
+                            - !input df_conditions_set
+                            - !input enable_climate_snapshot
+                            - !input set_point_changed_on_device
+                        action: input_boolean.turn_off
+            alias: On Deivce Override detected - turn off DF booleans
+          - conditions:
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - Occupant On Device Override - Target Temperature
+                      - Occupant On Device Override - Target High Temp
+                      - Occupant On Device Override - Target Low Temp
+                alias: Checks if one of the three set point attribute have changes
+            sequence:
+              - choose:
+                  - conditions:
+                      - condition: state
+                        entity_id:
+                          - !input df_event_status
+                          - !input enable_climate_snapshot
+                          - !input df_restriction_status
+                          - !input df_conditions_set
+                        state: "on"
+                    sequence:
+                      - metadata: {}
+                        data: {}
+                        target:
+                          entity_id: !input set_point_changed_on_device
+                        action: input_boolean.turn_on
+                alias: >-
+                  Confirms On going DF event and turns on the boolean for on device
+                  override
+            alias: Detect set point changes when DF event is on
+
 mode: parallel
 trace:
   stored_traces: 50
