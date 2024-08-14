@@ -1,5 +1,11 @@
 # The MA 01 house DF test automation uses the following entities
-
+## Cards and integrations
+### HACS Lovelace 
+    - restriction [card]( https://github.com/NEU-ABLE-LAB/restriction-card) - this is different from original restriction card
+### HACS Integration
+    - climate-template [integration](https://github.com/litinoveweedle/hass-template-climate)
+### HA Integration
+    - Google [calendar](https://www.home-assistant.io/integrations/google/)
 ## Entities
 
 ### Calendar
@@ -26,6 +32,8 @@ Follow the google calendar integration documentation to set up the integration.
 
 as of 7/31: 
 this is automaation/blueprint is set up to be for just one thermostat poer house. The snapshot climate entity uses the HACS integration [climate-template](https://github.com/litinoveweedle/hass-template-climate)
+
+
 
 ### Input Texts
 - input_boolean.set_df_conditions
