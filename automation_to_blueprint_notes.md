@@ -25,8 +25,7 @@ Follow the google calendar integration documentation to set up the integration.
 - climate.thermostat_snapshot
 
 as of 7/31: 
-this is automaation/blueprint is set up to be for just one thermostat poer house. The snapshot climate entity uses the HACS integration [climate-template](https://github.com/jcwillox/hass-template-climate)
-
+this is automaation/blueprint is set up to be for just one thermostat poer house. The snapshot climate entity uses the HACS integration [climate-template](https://github.com/litinoveweedle/hass-template-climate)
 
 ### Input Texts
 - input_boolean.set_df_conditions
