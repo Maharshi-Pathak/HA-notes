@@ -1,11 +1,11 @@
 # The MA 01 house DF test automation uses the following entities
 ## Cards and integrations
 ### HACS Lovelace 
-    - restriction [card]( https://github.com/NEU-ABLE-LAB/restriction-card) - this is different from original restriction card
+- restriction [card](https://github.com/NEU-ABLE-LAB/restriction-card) - this is different from original restriction card
 ### HACS Integration
-    - climate-template [integration](https://github.com/litinoveweedle/hass-template-climate)
+- climate-template [integration](https://github.com/litinoveweedle/hass-template-climate)
 ### HA Integration
-    - Google [calendar](https://www.home-assistant.io/integrations/google/)
+- Google [calendar](https://www.home-assistant.io/integrations/google/)
 ## Entities
 
 ### Calendar
