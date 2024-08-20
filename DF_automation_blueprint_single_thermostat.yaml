@@ -207,7 +207,9 @@ action:
               0
           {% endif %}
         {% endif %}
-  - choose:
+    alias: defines DF variables
+  - alias: based on stages of automation stage, chooses which action to perform 
+    choose:
       - conditions:
           - condition: trigger
             id:
