@@ -32,79 +32,93 @@ blueprint:
       description: "Input text for thermostat snapshot fan mode"
       selector:
         entity:
-          domain: input_text
+          filter:
+            - integration: Google Calendar
+              domain: calendar
     thermostat_snapshot_hvac_mode:
       name: Thermostat Snapshot HVAC Mode
       description: "Input text for thermostat snapshot HVAC mode"
       selector:
         entity:
-          domain: input_text
+          filter:
+            domain: input_text
     thermostat_snapshot_preset_mode:
       name: Thermostat Snapshot Preset Mode
       description: "Input text for thermostat snapshot preset mode"
       selector:
         entity:
-          domain: input_text
+          filter:
+            domain: input_text
     thermostat_snapshot_hvac_action:
       name: Thermostat Snapshot HVAC Action
       description: "Input text for thermostat snapshot HVAC action"
       selector:
         entity:
-          domain: input_text
+          filter:
+            domain: input_text
     thermostat_snapshot_target_temp_low:
       name: Thermostat Snapshot Target Temp Low
       description: "Input text for thermostat snapshot target temp low"
       selector:
         entity:
-          domain: input_text
+          filter:
+            domain: input_text
     thermostat_snapshot_target_temp_high:
       name: Thermostat Snapshot Target Temp High
       description: "Input text for thermostat snapshot target temp high"
       selector:
         entity:
-          domain: input_text
+          filter:
+            domain: input_text
     thermostat_snapshot_temperature:
       name: Thermostat Snapshot Temperature
       description: "Input text for thermostat snapshot temperature"
       selector:
         entity:
-          domain: input_text
+          filter:
+            domain: input_text
     df_event_status:
       name: DF Event Status
       description: "Input boolean to indicate the status of DF event"
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            domain: input_boolean
     df_restriction_status:
       name: DF Restriction Status
       description: "Input boolean to indicate DF restriction status"
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            domain: input_boolean
     enable_climate_snapshot:
       name: Climate Snapshot
       description: "Input boolean to indicate the climate snapshot status"
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            domain: input_boolean
     set_df_conditions:
       name: Set DF Conditions
       description: "Input boolean to enable DF conditions"
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            domain: input_boolean
     df_conditions_set:
       name: DF Conditions Set
       description: "Input boolean to indicate DF conditions are set"
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            domain: input_boolean
     set_point_changed_on_device:
       name: Set Point Changed On Device
       description: "Input boolean to indicate if set point changed on device"
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            domain: input_boolean
 variables: 
   df_calendar: !input calendar_df_weh
   real_thermostat: !input climate_thermostat
