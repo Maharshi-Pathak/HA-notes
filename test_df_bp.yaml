@@ -17,10 +17,9 @@ trigger:
     to: "on"
     id: start_df_event
     alias: Calendar event for DF turns on
-variables: 
-  calendar_df_weh: !input calendar_df_weh
 action:
   - variables:
+      calendar_df_weh: !input calendar_df_weh
       t_delta: |-
         {% if is_state('calendar_df_weh', 'on') %}
           {{ float((state_attr('calendar_df_weh', 'description') | from_json)['T_delta'], 0)  }}
