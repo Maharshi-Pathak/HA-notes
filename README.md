@@ -133,7 +133,7 @@ thin are my notes for deploying, managing, improving the HA servers in 26+ homes
 ```
 
 
-%% ```mermaid
+```mermaid
 stateDiagram-v2
     [*] --> Start_DF_Event: Calendar event for DF turns on
 
