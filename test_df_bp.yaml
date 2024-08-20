@@ -1,5 +1,5 @@
 blueprint:
-  name: "DF sequence of Operation - Full Cycle"
+  name: Test BP Import
   description: "DF sequence of Operation - Full Cycle"
   domain: automation
   input:
