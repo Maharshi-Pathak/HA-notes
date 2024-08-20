@@ -7,9 +7,8 @@ blueprint:
       name: Calendar DF WEH
       description: "The calendar entity that triggers DF events"
       selector:
-        device:
-            entity:
-            domain: calendar
+        entity:
+          domain: calendar
     climate_thermostat:
       name: Climate Thermostat
       description: "Thermostat entity"
