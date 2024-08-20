@@ -133,23 +133,52 @@ thin are my notes for deploying, managing, improving the HA servers in 26+ homes
 ```
 
 
-```mermaid
+%% ```mermaid
 stateDiagram-v2
-    [*] --> Initial: Start
-    Initial --> DF_Event_Started: calendar.nuhome_df_test "on"
-    DF_Event_Started --> Snapshot_and_Restriction_Enabled: input_boolean.df_event_status "on"
-    Snapshot_and_Restriction_Enabled --> Take_Climate_Snapshot: input_boolean.climate_snapshot "on"
-    Take_Climate_Snapshot --> Set_DF_Conditions: input_boolean.set_df_conditions "on"
-    
-    Set_DF_Conditions --> Occupant_Override_In_App: input_boolean.df_restriction_status "off"
-    Occupant_Override_In_App --> [*]: Reset Climate Conditions & DF booleans
-    
-    Set_DF_Conditions --> Occupant_Override_On_Device: input_boolean.smart_cities_set_point_changed_on_device "on"
-    Occupant_Override_On_Device --> [*]: Turn off DF Booleans
-    
-    Set_DF_Conditions --> Detect_Set_Point_Changes: climate.office attribute change
-    Detect_Set_Point_Changes --> [*]: Turn on ON device Override Boolean
-    
-    Set_DF_Conditions --> DF_Event_Ended: calendar.nuhome_df_test "off"
-    DF_Event_Ended --> [*]: Reset DF Booleans & DF booleans
+    [*] --> Start_DF_Event: Calendar event for DF turns on
+
+    state Start_DF_Event {
+        direction LR
+        Calendar_on --> Take_Climate_Snapshot
+        Take_Climate_Snapshot --> Restrict_UI: Take snapshot of climate conditions prior to DF event
+        Restrict_UI --> Set_DF_Conditions
+    }
+
+    Start_DF_Event --> DF_Conditions_Set: Start DF event when calendar event is live
+
+    state DF_Conditions_Set {
+        direction LR
+        DF_Event_Started --> Climate_Snapshot_Enabled: Turns on snapshot, restriction booleans
+        Climate_Snapshot_Enabled --> Capture_Climate_Conditions: Gets Thermostat set point(s) depending on the climate mode
+        Capture_Climate_Conditions --> Enable_DF_Conditions: Turns boolean on to set DF conditions next
+        Enable_DF_Conditions --> DF_Conditions_Applied: Sets DF conditions
+    }
+
+    state DF_Conditions_Applied {
+        direction LR
+        Dual_Mode_Heating_Cooling --> Apply_Offset_Both_Setpoints: Sets Dual mode HVAC conditions
+        Apply_Offset_Both_Setpoints --> Conditions_Set
+        Single_Mode_Heating_Cooling --> Apply_Appropriate_Setpoints: Confirms single mode and appropriate DF season
+        Apply_Appropriate_Setpoints --> Conditions_Set
+    }
+
+    DF_Conditions_Set --> UI_Override: InApp Override detected - reset to prior Climate conditions and turn off DF booleans
+    DF_Conditions_Set --> On_Device_Override: On Device Override detected - turn off DF booleans
+
+    state UI_Override {
+        direction LR
+        UI_Restriction --> Resume_Previous_Program: Confirms if Pre-DF climate conditions were on a schedule, resumes ecobee programs
+        Resume_Previous_Program --> Reset_Booleans: Turns off DF booleans
+    }
+
+    state On_Device_Override {
+        direction LR
+        Device_Change_Detected --> Reset_Booleans: Detect set point changes when DF event is on
+    }
+
+    Conditions_Set --> Reset_Booleans
+
+    Reset_Booleans --> [*]
 ```
+
+
