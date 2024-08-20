@@ -22,8 +22,8 @@ trigger:
     alias: Calendar event for DF turns on
 
 action:
-  - variables:
-      calendar_df_weh: !input calendar_df_weh
+  # - variables:
+  #     calendar_df_weh: !input calendar_df_weh
   - action: notify.weh_iot_msteams
     metadata: {}
     data:
