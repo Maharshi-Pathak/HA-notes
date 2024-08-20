@@ -1,5 +1,5 @@
 blueprint:
-  name: Test BP Import
+  name: Test BP Import ACTION
   description: Testing MP
   source_url: https://github.com/Maharshi-Pathak/HA-notes/blob/main/test_df_bp.yaml
   author: Maharshi Pathak - Northeastern University
