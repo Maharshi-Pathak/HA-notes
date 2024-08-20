@@ -12,6 +12,13 @@ blueprint:
         entity:
           filter:
             - domain: calendar
+    notify_entity: 
+      name: notify_entity
+      description: Notification
+      selector: 
+        entitiy:
+          filter:
+            - domain: notify
 
 trigger:
   - platform: state
@@ -22,13 +29,13 @@ trigger:
     alias: Calendar event for DF turns on
 
 action:
-  # - variables:
-  #     calendar_df_weh: !input calendar_df_weh
-  - action: notify.weh_iot_msteams
+  - action: !input notify_entity
     metadata: {}
     data:
       title: "WEH MPN DF AUTO TEST NOTIFICATION"
       message: "THIS IS A TEST"
+  # - variables:
+  #     calendar_df_weh: !input calendar_df_weh
   
     #   t_delta: >-
     #     {% if is_state('calendar_df_weh', 'on') %}
