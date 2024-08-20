@@ -20,26 +20,32 @@ trigger:
 action:
   - variables:
       calendar_df_weh: !input calendar_df_weh
-      t_delta: |-
-        {% if is_state('calendar_df_weh', 'on') %}
-          {{ float((state_attr('calendar_df_weh', 'description') | from_json)['T_delta'], 0)  }}
-        {% else %}
-          0
-        {% endif %}
-      season: |-
-        {% if is_state('calendar_df_weh', 'on') %}
-          {{ (state_attr('calendar_df_weh', 'description') | from_json)['season']  }}
-        {% else %}
-          {{ '' }}
-        {% endif %}
-      df_delta_multiplier: |-
-        {% if is_state('calendar_df_weh', 'on') %}
-          {% if (state_attr('calendar_df_weh', 'description') | from_json)['season'] == 'cooling' %}
-            {{ float(1, 0) }}
-          {% elif (state_attr('calendar_df_weh', 'description') | from_json)['season'] == 'heating' %} 
-            {{ float(-1, 0) }}
-          {% else %}
-              0
-          {% endif %}
-        {% endif %}
-    alias: test action bp import
+  - action: notify.weh_iot_msteams
+    metadata: {}
+    data:
+      title: WEH MPN DF automation error detected
+      message: "{{trigger.event.data}}"
+  
+    #   t_delta: >-
+    #     {% if is_state('calendar_df_weh', 'on') %}
+    #       {{ float((state_attr('calendar_df_weh', 'description') | from_json)['T_delta'], 0)  }}
+    #     {% else %}
+    #       0
+    #     {% endif %}
+    #   season: >-
+    #     {% if is_state('calendar_df_weh', 'on') %}
+    #       {{ (state_attr('calendar_df_weh', 'description') | from_json)['season']  }}
+    #     {% else %}
+    #       {{ '' }}
+    #     {% endif %}
+    #   df_delta_multiplier: >-
+    #     {% if is_state('calendar_df_weh', 'on') %}
+    #       {% if (state_attr('calendar_df_weh', 'description') | from_json)['season'] == 'cooling' %}
+    #         {{ float(1, 0) }}
+    #       {% elif (state_attr('calendar_df_weh', 'description') | from_json)['season'] == 'heating' %} 
+    #         {{ float(-1, 0) }}
+    #       {% else %}
+    #           0
+    #       {% endif %}
+    #     {% endif %}
+    # alias: test action bp import
