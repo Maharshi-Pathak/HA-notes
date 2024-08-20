@@ -33,8 +33,7 @@ blueprint:
       selector:
         entity:
           filter:
-            - integration: Google Calendar
-              domain: calendar
+            domain: input_text
     thermostat_snapshot_hvac_mode:
       name: Thermostat Snapshot HVAC Mode
       description: "Input text for thermostat snapshot HVAC mode"
