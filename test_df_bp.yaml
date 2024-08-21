@@ -15,11 +15,6 @@ blueprint:
     notify_entity: 
       name: notify_entity
       description: Notification
-      selector: 
-        entitiy:
-          filter:
-            - domain: notify
-
 trigger:
   - platform: state
     entity_id: !input calendar_df_weh
