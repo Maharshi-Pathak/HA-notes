@@ -10,11 +10,19 @@ blueprint:
       description: "The calendar entity that triggers DF events"
       selector:
         entity:
+          multiple: false
           filter:
-            - domain: calendar
+            - domain:
+                - calendar
     notify_entity: 
       name: notify_entity
       description: Notification
+      selector:
+        entity:
+          multiple: false
+          filter:
+            - domain:
+                - notify
 trigger:
   - platform: state
     entity_id: !input calendar_df_weh
