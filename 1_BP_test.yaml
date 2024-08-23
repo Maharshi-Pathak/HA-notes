@@ -9,12 +9,12 @@ blueprint:
         entity:
           filter:
             - domain: switch
-    target_light:
-      name: Lights
+    target_booleam:
+      name: Boolean
       selector:
         target:
           entity:
-            - domain: light
+            - domain: input_boolean
 
 trigger:
   - platform: state
@@ -23,8 +23,8 @@ trigger:
 action:
   - action: >
       {% if trigger.to_state.state == "on" %}
-        light.turn_on
+        input_boolean.turn_on
       {% else %}
-        light.turn_off
+        input_boolean.turn_off
       {% endif %}
-    target: !input target_light
+    target: !input target_boolean
