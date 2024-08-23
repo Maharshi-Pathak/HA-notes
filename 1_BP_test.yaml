@@ -7,12 +7,14 @@ blueprint:
       name: DF event status
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            - domain:: input_boolean
     set_df_conditions_input:
       name: Set DF conditions
       selector:
-        entity:
-          domain: input_boolean
+        target:
+          entity:
+            - domain: input_boolean
 
 trigger:
   - platform: state
