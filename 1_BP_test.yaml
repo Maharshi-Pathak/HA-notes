@@ -25,5 +25,4 @@ action:
       {% else %}
         input_boolean.turn_off
       {% endif %}
-    target:
-      entity_id: !input set_df_conditions_input
+    target: !input set_df_conditions_input
