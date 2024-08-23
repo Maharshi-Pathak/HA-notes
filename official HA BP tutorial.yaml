@@ -1,0 +1,32 @@
+blueprint:
+  name: Motion Light Tutorial
+  description: Turn a light on based on detected motion
+  domain: automation
+  input:
+    humidifier_switch:
+      name: Humidifier
+      description: This sensor will be synchronized with the light.
+      selector:
+        entity:
+          filter:
+            - domain: switch
+    target_light:
+      name: Lights
+      description: The lights to keep in sync.
+      selector:
+        target:
+          entity:
+            - domain: light
+
+trigger:
+  - platform: state
+    entity_id: !input humidifier_switch
+
+action:
+  - action: >
+      {% if trigger.to_state.state == "on" %}
+        light.turn_on
+      {% else %}
+        light.turn_off
+      {% endif %}
+    target: !input target_light
