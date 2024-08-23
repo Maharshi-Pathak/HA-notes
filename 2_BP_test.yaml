@@ -3,12 +3,12 @@ blueprint:
   description: Turn a toggle on based on another toggle turning on
   domain: automation
   input:
-    humidifier_switch:
+    humidifier_boolean:
       name: DF event status
       selector:
         entity:
           filter:
-            - domain: switch
+            - domain: input_boolean
     target_boolean:
       name: Boolean
       selector:
@@ -18,7 +18,7 @@ blueprint:
             
 trigger:
   - platform: state
-    entity_id: !input humidifier_switch
+    entity_id: !input humidifier_boolean
 
 action:
   - action: >
