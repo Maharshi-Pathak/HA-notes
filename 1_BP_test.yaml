@@ -9,7 +9,7 @@ blueprint:
         entity:
           filter:
             - domain: switch
-    target_booleam:
+    target_boolean:
       name: Boolean
       selector:
         target:
