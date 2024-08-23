@@ -15,7 +15,7 @@ blueprint:
         target:
           entity:
             - domain: input_boolean
-
+            
 trigger:
   - platform: state
     entity_id: !input humidifier_switch
