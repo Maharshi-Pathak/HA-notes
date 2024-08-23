@@ -1,0 +1,30 @@
+blueprint:
+  name: DF setting BP test
+  description: Turn a toggle on based on another toggle turning on
+  domain: automation
+  input:
+    humidifier_switch:
+      name: DF event status
+      selector:
+        entity:
+          filter:
+            - domain: switch
+    target_boolean:
+      name: Boolean
+      selector:
+        target:
+          entity:
+            - domain: input_boolean
+            
+trigger:
+  - platform: state
+    entity_id: !input humidifier_switch
+
+action:
+  - action: >
+      {% if trigger.to_state.state == "on" %}
+        input_boolean.turn_on
+      {% else %}
+        input_boolean.turn_off
+      {% endif %}
+    target: !input target_boolean
