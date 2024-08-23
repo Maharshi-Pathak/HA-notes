@@ -17,7 +17,7 @@ blueprint:
 trigger:
   - platform: state
     entity_id: !input df_event_status_input
-condition: []
+
 action:
   - action: >
       {% if trigger.to_state.state == "on" %}
