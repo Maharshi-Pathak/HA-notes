@@ -3,28 +3,28 @@ blueprint:
   description: Turn a toggle on based on another toggle turning on
   domain: automation
   input:
-    df_event_status_input:
+    humidifier_switch:
       name: DF event status
       selector:
         entity:
           filter:
-            - domain:: input_boolean
-    set_df_conditions_input:
-      name: Set DF conditions
+            - domain: switch
+    target_light:
+      name: Lights
       selector:
         target:
           entity:
-            - domain: input_boolean
+            - domain: light
 
 trigger:
   - platform: state
-    entity_id: !input df_event_status_input
+    entity_id: !input humidifier_switch
 
 action:
   - action: >
       {% if trigger.to_state.state == "on" %}
-        input_boolean.turn_on
+        light.turn_on
       {% else %}
-        input_boolean.turn_off
+        light.turn_off
       {% endif %}
-    target: !input set_df_conditions_input
+    target: !input target_light
