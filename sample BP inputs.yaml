@@ -1,5 +1,5 @@
   input:
-    calendar_df_weh: calendar.weh_mpnnvs5ppatx_gmail_com
+    calendar_df_weh: calendar.nuhome_df_test
     climate_thermostat: climate.office
     climate_thermostat_snapshot: climate.smart_cities_snapshot_2
     set_df_conditions: input_boolean.set_df_conditions

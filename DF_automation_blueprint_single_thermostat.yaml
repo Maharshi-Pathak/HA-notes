@@ -213,123 +213,121 @@ action:
             target:
               entity_id: !input df_event_status
         alias: Start DF event when calendar event is live
-    #   - conditions:
-    #       - condition: trigger
-    #         id:
-    #           - df_event_started
-    #     sequence:
-    #       - action: input_boolean.turn_on
-    #         target:
-    #           entity_id:
-    #             - !input df_restriction_status
-    #             - !input enable_climate_snapshot
+      - conditions:
+          - condition: trigger
+            id: df_event_started
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id:
+                - !input df_restriction_status
+                - !input enable_climate_snapshot
+        alias: Turns on snapshot, restriction booleans
+      - conditions:
+          - condition: and
+            conditions:
+              - condition: trigger
+                id: take climate snapshot
+              - condition: state
+                entity_id: !input df_event_status
+                state: "on"
+            alias: Confirms DF event is on & snapshot is enabled
+        sequence:
+          - action: input_text.set_value
+            metadata: {}
+            data:
+              value: "{{state_attr(real_thermostat, 'fan_mode')}}"
+            target:
+              entity_id: !input thermostat_snapshot_fan_mode
+          - action: input_text.set_value
+            metadata: {}
+            data:
+              value: "{{ states(real_thermostat) }} "
+            target:
+              entity_id: !input thermostat_snapshot_hvac_mode
+          - action: input_text.set_value
+            metadata: {}
+            data:
+              value: "{{ state_attr(real_thermostat, 'preset_mode')}}"
+            target:
+              entity_id: !input thermostat_snapshot_preset_mode
+          - action: input_text.set_value
+            metadata: {}
+            data:
+              value: "{{ state_attr(real_thermostat, 'hvac_action')}}"
+            target:
+              entity_id: !input thermostat_snapshot_hvac_action
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: !input climate_thermostat
+                    state: heat_cool
+                    alias: Confirms the thermostat is in dual mode (heat_cool)
+                sequence:
+                  - action: input_text.set_value
+                    metadata: {}
+                    data:
+                      value: >
+                        {{ float(state_attr(real_thermostat,
+                        'target_temp_low'),None) }}
+                    target:
+                      entity_id: !input thermostat_snapshot_target_temp_low
+                    
+                  - action: input_text.set_value
+                    metadata: {}
+                    data:
+                      value: >
+                        {{ float(state_attr(real_thermostat,
+                        'target_temp_high'), None) }}
+                    target:
+                      entity_id: !input thermostat_snapshot_target_temp_high
+                  - action: input_text.set_value
+                    metadata: {}
+                    data:
+                      value: |
+                        {{ ' ' }}
+                    target:
+                      entity_id: !input thermostat_snapshot_temperature
+              - conditions:
+                  - alias: Confirms the thermostat is in single mode (heat/cool)
+                    condition: or
+                    conditions:
+                      - condition: state
+                        entity_id: !input climate_thermostat
+                        state: heat
+                      - condition: state
+                        entity_id: !input climate_thermostat
+                        state: cool
+                sequence:
+                  - action: input_text.set_value
+                    metadata: {}
+                    data:
+                      value: >
+                        {{ float(state_attr(real_thermostat,
+                        'temperature'), None) }}
+                    target:
+                      entity_id: !input thermostat_snapshot_temperature
+                  - action: input_text.set_value
+                    metadata: {}
+                    data:
+                      value: |
+                        {{ ' ' }}
+                    target:
+                      entity_id: !input thermostat_snapshot_target_temp_low
+                  - action: input_text.set_value
+                    metadata: {}
+                    data:
+                      value: |
+                        {{ ' ' }}
+                    target:
+                      entity_id: !input thermostat_snapshot_target_temp_high
+            alias: Gets Thermostat set point(s) depending on the climate mode
+          - action: input_boolean.turn_on
+            target:
+              entity_id: !input set_df_conditions
+            alias: Turns boolean on to set DF conditions next
             
-    #     alias: Turns on snapshot, restriction booleans
-    #   - conditions:
-    #       - condition: and
-    #         conditions:
-    #           - condition: trigger
-    #             id:
-    #               - take climate snapshot
-    #           - condition: state
-    #             entity_id: !input df_event_status
-    #             state: "on"
-    #         alias: Confirms DF event is on & snapshot is enabled
-    #     sequence:
-    #       - metadata: {}
-    #         data:
-    #           value: "{{state_attr(real_thermostat, 'fan_mode')}}"
-    #         target:
-    #           entity_id: !input thermostat_snapshot_fan_mode
-    #         action: input_text.set_value
-    #       - metadata: {}
-    #         data:
-    #           value: "{{ states(real_thermostat) }} "
-    #         target:
-    #           entity_id: !input thermostat_snapshot_hvac_mode
-    #         action: input_text.set_value
-    #       - metadata: {}
-    #         data:
-    #           value: "{{ state_attr(real_thermostat, 'preset_mode')}}"
-    #         target:
-    #           entity_id: !input thermostat_snapshot_preset_mode
-    #         action: input_text.set_value
-    #       - metadata: {}
-    #         data:
-    #           value: "{{ state_attr(real_thermostat, 'hvac_action')}}"
-    #         target:
-    #           entity_id: !input thermostat_snapshot_hvac_action
-    #         action: input_text.set_value
-    #       - choose:
-    #           - conditions:
-    #               - condition: state
-    #                 entity_id: !input climate_thermostat
-    #                 state: heat_cool
-    #                 alias: Confirms the thermostat is in dual mode (heat_cool)
-    #             sequence:
-    #               - metadata: {}
-    #                 data:
-    #                   value: >
-    #                     {{ float(state_attr(real_thermostat,
-    #                     'target_temp_low'),None) }}
-    #                 target:
-    #                   entity_id: !input thermostat_snapshot_target_temp_low
-    #                 action: input_text.set_value
-    #               - metadata: {}
-    #                 data:
-    #                   value: >
-    #                     {{ float(state_attr(real_thermostat,
-    #                     'target_temp_high'), None) }}
-    #                 target:
-    #                   entity_id: !input thermostat_snapshot_target_temp_high
-    #                 action: input_text.set_value
-    #               - metadata: {}
-    #                 data:
-    #                   value: |
-    #                     {{ ' ' }}
-    #                 target:
-    #                   entity_id: !input thermostat_snapshot_temperature
-    #                 action: input_text.set_value
-    #           - conditions:
-    #               - alias: Confirms the thermostat is in single mode (heat/cool)
-    #                 condition: or
-    #                 conditions:
-    #                   - condition: state
-    #                     entity_id: !input climate_thermostat
-    #                     state: heat
-    #                   - condition: state
-    #                     entity_id: !input climate_thermostat
-    #                     state: cool
-    #             sequence:
-    #               - metadata: {}
-    #                 data:
-    #                   value: >
-    #                     {{ float(state_attr(real_thermostat,
-    #                     'temperature'), None) }}
-    #                 target:
-    #                   entity_id: !input thermostat_snapshot_temperature
-    #                 action: input_text.set_value
-    #               - metadata: {}
-    #                 data:
-    #                   value: |
-    #                     {{ ' ' }}
-    #                 target:
-    #                   entity_id: !input thermostat_snapshot_target_temp_low
-    #                 action: input_text.set_value
-    #               - metadata: {}
-    #                 data:
-    #                   value: |
-    #                     {{ ' ' }}
-    #                 target:
-    #                   entity_id: !input thermostat_snapshot_target_temp_high
-    #                 action: input_text.set_value
-    #         alias: Gets Thermostat set point(s) depending on the climate mode
-    #       - action: input_boolean.turn_on
-    #         target:
-    #           entity_id: !input set_df_conditions
-    #         alias: Turns boolean on to set DF conditions next
-            
-    #     alias: Sets snapshot entities in helper texts
+        alias: Sets snapshot entities in helper texts
     #   - conditions:
     #       - condition: and
     #         conditions:
