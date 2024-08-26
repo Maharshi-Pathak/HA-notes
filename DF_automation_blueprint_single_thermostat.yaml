@@ -215,24 +215,20 @@ action:
             id:
               - start_df_event
         sequence:
-          - metadata: {}
-            data: {}
-            target:
-              entity_id: !input df_event_status
-            action: input_boolean.turn_on
+          - action: input_boolean.turn_on
+            target: !input df_event_status
         alias: Start DF event when calendar event is live
       - conditions:
           - condition: trigger
             id:
               - df_event_started
         sequence:
-          - metadata: {}
-            data: {}
+          - action: input_boolean.turn_on
             target:
               entity_id:
                 - !input df_restriction_status
                 - !input enable_climate_snapshot
-            action: input_boolean.turn_on
+            
         alias: Turns on snapshot, restriction booleans
       - conditions:
           - condition: and
@@ -333,12 +329,11 @@ action:
                       entity_id: !input thermostat_snapshot_target_temp_high
                     action: input_text.set_value
             alias: Gets Thermostat set point(s) depending on the climate mode
-          - metadata: {}
-            data: {}
+          - action: input_boolean.turn_on
             target:
               entity_id: !input set_df_conditions
             alias: Turns boolean on to set DF conditions next
-            action: input_boolean.turn_on
+            
         alias: Sets snapshot entities in helper texts
       - conditions:
           - condition: and
@@ -377,12 +372,11 @@ action:
                       minutes: 0
                       seconds: 5
                       milliseconds: 0
-                  - metadata: {}
-                    data: {}
+                  - action: input_boolean.turn_on
                     target:
                       entity_id: !input df_conditions_set
                     alias: Enable boolean to indicate DF conditions are set
-                    action: input_boolean.turn_on
+                    
                 alias: Confirms dual mode and offsets both setpoints
               - conditions:
                   - alias: Check HVAC mode is heating or cooling and DF season
@@ -416,12 +410,10 @@ action:
                       minutes: 0
                       seconds: 5
                       milliseconds: 0
-                  - metadata: {}
-                    data: {}
+                  - action: input_boolean.turn_on
                     target:
                       entity_id: !input df_conditions_set
                     alias: Enable boolean to indicate DF conditions are set
-                    action: input_boolean.turn_on
                 alias: Confirms single mode and appropriate DF season
         alias: Sets DF conditions
       - conditions:
@@ -460,8 +452,7 @@ action:
                             data:
                               entity_id: !input climate_thermostat
                             action: ecobee.resume_program
-                          - metadata: {}
-                            data: {}
+                          - action: input_boolean.turn_off
                             target:
                               entity_id:
                                 - !input df_event_status
@@ -470,7 +461,7 @@ action:
                                 - !input df_conditions_set
                                 - !input enable_climate_snapshot
                                 - !input set_point_changed_on_device
-                            action: input_boolean.turn_off
+                            
                         alias: >-
                           Confirms if Pre-DF climate conditions were on a
                           schedule, resumes eocbee programs
@@ -496,8 +487,7 @@ action:
                                     target:
                                       entity_id: !input climate_thermostat
                                     action: climate.set_temperature
-                                  - metadata: {}
-                                    data: {}
+                                  - action: input_boolean.turn_off
                                     target:
                                       entity_id:
                                         - !input df_event_status
@@ -506,7 +496,7 @@ action:
                                         - !input df_conditions_set
                                         - !input enable_climate_snapshot
                                         - !input set_point_changed_on_device
-                                    action: input_boolean.turn_off
+                                    
                               - conditions:
                                   - condition: or
                                     conditions:
@@ -528,8 +518,7 @@ action:
                                     target:
                                       entity_id: !input climate_thermostat
                                     action: climate.set_temperature
-                                  - metadata: {}
-                                    data: {}
+                                  - action: input_boolean.turn_off
                                     target:
                                       entity_id:
                                         - !input df_event_status
@@ -538,7 +527,7 @@ action:
                                         - !input df_conditions_set
                                         - !input enable_climate_snapshot
                                         - !input set_point_changed_on_device
-                                    action: input_boolean.turn_off
+                                    
         alias: >-
           InApp Override detected - reset to prior Climate conditions and turn
           off DF booleans
@@ -558,8 +547,7 @@ action:
                       - !input df_conditions_set
                     state: "on"
                 sequence:
-                  - metadata: {}
-                    data: {}
+                  - action: input_boolean.turn_off
                     target:
                       entity_id:
                         - !input df_event_status
@@ -568,7 +556,7 @@ action:
                         - !input df_conditions_set
                         - !input enable_climate_snapshot
                         - !input set_point_changed_on_device
-                    action: input_boolean.turn_off
+                    
         alias: On Deivce Override detected - turn off DF booleans
       - conditions:
           - condition: and
@@ -590,11 +578,9 @@ action:
                       - !input df_conditions_set
                     state: "on"
                 sequence:
-                  - metadata: {}
-                    data: {}
+                  - action: input_boolean.turn_on
                     target:
                       entity_id: !input set_point_changed_on_device
-                    action: input_boolean.turn_on
             alias: >-
               Confirms On going DF event and turns on the boolean for on device
               override
