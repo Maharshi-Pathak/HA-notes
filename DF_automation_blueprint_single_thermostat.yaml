@@ -201,16 +201,18 @@ action:
           {% endif %}
         {% endif %}
     alias: defines DF variables
-  # - alias: based on stages of automation stage, chooses which action to perform 
-    # choose:
-    #   - conditions:
-    #       - condition: trigger
-    #         id:
-    #           - start_df_event
-    #     sequence:
-    #       - action: input_boolean.turn_on
-    #         target: !input df_event_status
-    #     alias: Start DF event when calendar event is live
+  - alias: based on stages of automation stage, chooses which action to perform 
+    choose:
+      - conditions:
+          - condition: trigger
+            id: start_df_event
+        sequence:
+          - action: input_boolean.turn_on
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input df_event_status
+        alias: Start DF event when calendar event is live
     #   - conditions:
     #       - condition: trigger
     #         id:
