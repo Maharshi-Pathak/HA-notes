@@ -1,0 +1,17 @@
+  input:
+    calendar_df_weh: calendar.weh_mpnnvs5ppatx_gmail_com
+    climate_thermostat: climate.office
+    climate_thermostat_snapshot: climate.smart_cities_snapshot_2
+    set_df_conditions: input_boolean.set_df_conditions
+    thermostat_snapshot_fan_mode: input_text.smart_cities_snapshot_fan_mode
+    thermostat_snapshot_hvac_mode: input_text.smart_cities_snapshot_hvac_mode
+    thermostat_snapshot_preset_mode: input_text.smart_cities_snapshot_preset_mode
+    thermostat_snapshot_hvac_action: input_text.smart_cities_snapshot_hvac_action
+    thermostat_snapshot_target_temp_low: input_text.smart_cities_snapshot_target_temp_low
+    thermostat_snapshot_target_temp_high: input_text.smart_cities_snapshot_target_temp_high
+    thermostat_snapshot_temperature: input_text.smart_cities_snapshot_temperature
+    df_event_status: input_boolean.df_event_status
+    df_restriction_status: input_boolean.df_restriction_status
+    enable_climate_snapshot: input_boolean.climate_snapshot
+    df_conditions_set: input_boolean.df_conditions_set
+    set_point_changed_on_device: input_boolean.smart_cities_set_point_changed_on_device
