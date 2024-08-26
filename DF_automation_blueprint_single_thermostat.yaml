@@ -101,13 +101,6 @@ blueprint:
         entity:
           filter:
             - domain: input_boolean
-    set_df_conditions:
-      name: Set DF Conditions
-      description: "Input boolean to enable DF conditions"
-      selector:
-        entity:
-          filter:
-            - domain: input_boolean
     df_conditions_set:
       name: DF Conditions Set
       description: "Input boolean to indicate DF conditions are set"
