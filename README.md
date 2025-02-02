@@ -1,5 +1,5 @@
 # HA-notes
-thin are my notes for deploying, managing, improving the HA servers in 26+ homes over 2+ years 
+these are my notes for deploying, managing, improving the HA servers in 26+ homes over 2+ years 
 
 
 # Conducting a calendar based psuedo demand response event in 25 homes
