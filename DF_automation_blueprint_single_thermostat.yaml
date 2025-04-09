@@ -511,13 +511,12 @@ action:
           - action: input_boolean.turn_off
             target:
               entity_id:
-                - input_boolean.df_event_status
-                - input_boolean.df_restriction_status
-                - input_boolean.set_df_conditions
-                - input_boolean.df_conditions_set
-                - input_boolean.climate_snapshot
-                - input_boolean.smart_cities_set_point_changed_on_device
-            data: {}
+                - !input df_event_status
+                - !input df_restriction_status
+                - !input set_df_conditions
+                - !input df_conditions_set
+                - !input enable_climate_snapshot
+                - !input set_point_changed_on_device
             alias: turn off all DF event controlling booleans                           
         alias: >-
           InApp Override detected - reset to prior Climate conditions and turn
