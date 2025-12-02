@@ -1,3 +1,43 @@
+# Summary of the DF AUtoamtion State Diagram
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+
+    state "IDLE" as IDLE
+
+    state "DF EVENT ACTIVE" as DF_ACTIVE {
+        state "Initialization" as INIT
+        state "Snapshot Acquisition" as SNAP
+        state "Setpoint Override" as CTRL
+        state "Steady State" as STEADY
+
+        [*] --> INIT
+        INIT --> SNAP
+        SNAP --> CTRL
+        CTRL --> STEADY
+    }
+
+    state "OVERRIDE DETECTED" as OVERRIDE {
+        state "Feedback Monitor" as FB
+        state "Manual Override" as MAN
+
+        [*] --> FB
+        FB --> MAN
+    }
+
+    state "RESTORATION" as RESTORE {
+        state "Recovery" as RECV
+
+        [*] --> RECV
+    }
+
+    IDLE --> DF_ACTIVE: Calendar ON
+    DF_ACTIVE --> OVERRIDE: Plant deviation
+    DF_ACTIVE --> RESTORE: Calendar OFF
+    OVERRIDE --> IDLE: Operator takeover
+    RESTORE --> IDLE: Recovery complete
+```
+
 # DF Automation Control System - Fault Reference
 
 ## System Architecture
