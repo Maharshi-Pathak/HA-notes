@@ -4,19 +4,19 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        SUPERVISORY CONTROLLER                        │
-│                      (Home Assistant Automation)                     │
+│                        SUPERVISORY CONTROLLER                       │
+│                      (Home Assistant Automation)                    │
 ├─────────────────────────────────────────────────────────────────────┤
-│  REFERENCE INPUT          CONTROLLER              PLANT OUTPUT       │
+│  REFERENCE INPUT          CONTROLLER              PLANT OUTPUT      │
 │  ┌─────────────┐         ┌─────────┐            ┌─────────────┐     │
 │  │  Calendar   │─────────│  State  │────────────│ Thermostat  │     │
 │  │  (T_delta,  │  r(t)   │ Machine │   u(t)     │   (HVAC)    │     │
 │  │   season)   │         │         │            │             │     │
 │  └─────────────┘         └────┬────┘            └──────┬──────┘     │
 │                               │                        │            │
-│                               │    ┌──────────┐       │            │
-│                               │    │ FEEDBACK │       │ y(t)       │
-│                               └────│  MONITOR │◄──────┘            │
+│                               │    ┌──────────┐        │            │
+│                               │    │ FEEDBACK │        │ y(t)       │
+│                               └────│  MONITOR │◄────── ┘            │
 │                                    │ (Override│                     │
 │                                    │  Detect) │                     │
 │                                    └──────────┘                     │
