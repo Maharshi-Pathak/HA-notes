@@ -1,0 +1,388 @@
+# ═══════════════════════════════════════════════════════════════════
+# DF DASHBOARD TEMPLATE - REPLICABLE
+# ═══════════════════════════════════════════════════════════════════
+#
+# INSTRUCTIONS:
+#   1. Copy this entire file
+#   2. Find-replace these placeholders with your actual entity IDs:
+#
+#      {{ZONE_LABEL}}                  →  Office Thermostat
+#      {{CALENDAR}}                    →  calendar.nuhome_df_test
+#      {{CLIMATE}}                     →  climate.office
+#      {{CLIMATE_SNAPSHOT}}            →  climate.office_snapshot
+#      {{AUTOMATION}}                  →  automation.df_office_full_cycle
+#      {{BOOL_EVENT_STATUS}}           →  input_boolean.df_event_status
+#      {{BOOL_RESTRICTION}}            →  input_boolean.df_restriction_status
+#      {{BOOL_SNAPSHOT}}               →  input_boolean.enable_climate_snapshot
+#      {{BOOL_SET_CONDITIONS}}         →  input_boolean.set_df_conditions
+#      {{BOOL_CONDITIONS_SET}}         →  input_boolean.df_conditions_set
+#      {{BOOL_SETPOINT_CHANGED}}       →  input_boolean.set_point_changed_on_device
+#      {{TEXT_SNAP_HVAC_MODE}}         →  input_text.snapshot_hvac_mode
+#      {{TEXT_SNAP_PRESET}}            →  input_text.snapshot_preset_mode
+#      {{TEXT_SNAP_FAN}}               →  input_text.snapshot_fan_mode
+#      {{TEXT_SNAP_ACTION}}            →  input_text.snapshot_hvac_action
+#      {{TEXT_SNAP_TEMP}}              →  input_text.snapshot_temperature
+#      {{TEXT_SNAP_HIGH}}              →  input_text.snapshot_target_temp_high
+#      {{TEXT_SNAP_LOW}}               →  input_text.snapshot_target_temp_low
+#      {{SENSOR_MODE}}                 →  sensor.df_operating_mode
+#
+#   3. For multi-thermostat homes: duplicate the sections below and
+#      replace placeholders with zone-specific entities
+#
+# ═══════════════════════════════════════════════════════════════════
+
+  - type: sections
+    title: DF Monitor
+    icon: mdi:transmission-tower
+    cards: []
+    sections:
+      # ═══════════════════════════════════════════════════════════
+      # SECTION 1: Timeline (shared across all zones)
+      # ═══════════════════════════════════════════════════════════
+      - type: grid
+        cards:
+          - type: history-graph
+            title: 📈 Event Timeline (24h)
+            hours_to_show: 24
+            entities:
+              - entity: {{CALENDAR}}
+                name: Calendar
+              - entity: {{BOOL_EVENT_STATUS}}
+                name: df_event_status
+              - entity: {{BOOL_RESTRICTION}}
+                name: df_restriction_status
+              - entity: {{BOOL_SNAPSHOT}}
+                name: enable_climate_snapshot
+              - entity: {{BOOL_SET_CONDITIONS}}
+                name: set_df_conditions
+              - entity: {{BOOL_CONDITIONS_SET}}
+                name: df_conditions_set
+              - entity: {{BOOL_SETPOINT_CHANGED}}
+                name: set_point_changed_on_device
+              - entity: {{CLIMATE}}
+              - entity: {{SENSOR_MODE}}
+            grid_options:
+              columns: 36
+              rows: auto
+        column_span: 3
+
+      # ═══════════════════════════════════════════════════════════
+      # SECTION 2: Stage Tracking
+      # ═══════════════════════════════════════════════════════════
+      - type: grid
+        cards:
+          - type: heading
+            heading: "{{ZONE_LABEL}} - Stage Tracking"
+            heading_style: title
+
+          - type: markdown
+            title: ⚡ DF System Status
+            content: |-
+              ## Operating Mode: 
+              {% if is_state('{{BOOL_EVENT_STATUS}}', 'off') %}
+              ## 💤 IDLE
+              *Awaiting calendar trigger*
+              {% elif is_state('{{BOOL_SETPOINT_CHANGED}}', 'on') %}
+              ## ✋ OVERRIDE DETECTED
+              *Occupant changed setpoint on device*
+              {% elif is_state('{{BOOL_CONDITIONS_SET}}', 'on') %}
+              ## ✅ DF ACTIVE - STEADY STATE
+              *Monitoring for override or event end*
+              {% elif is_state('{{BOOL_SET_CONDITIONS}}', 'on') %}
+              ## ⚙️ STAGE 4: APPLYING DF CONDITIONS
+              *Setting thermostat to DF setpoints*
+              {% elif is_state('{{BOOL_SNAPSHOT}}', 'on') %}
+              ## 📸 STAGE 3: TAKING SNAPSHOT
+              *Capturing pre-DF thermostat state*
+              {% elif is_state('{{BOOL_RESTRICTION}}', 'on') %}
+              ## 🔒 STAGE 2: RESTRICTIONS ENABLED
+              *Snapshot & restriction booleans ON*
+              {% else %}
+              ## 🚀 STAGE 1: EVENT STARTED
+              *df_event_status turned ON*
+              {% endif %}
+            text_only: true
+
+          - type: markdown
+            title: 📍 Stage Progress
+            content: >-
+              | Stage | Trigger ID | Status |
+              |:------|:-----------|:------:|
+              | **1. Event Start** | `start_df_event` | {{ '✅' if is_state('{{BOOL_EVENT_STATUS}}', 'on') else '⬜' }} |
+              | **2. Enable Snapshot** | `df_event_started` | {{ '✅' if is_state('{{BOOL_RESTRICTION}}', 'on') and is_state('{{BOOL_SNAPSHOT}}', 'on') else '⬜' }} |
+              | **3. Take Snapshot** | `take climate snapshot` | {{ '✅' if is_state('{{BOOL_SET_CONDITIONS}}', 'on') else '⬜' }} |
+              | **4. Apply DF** | `Enable DF conditions` | {{ '✅' if is_state('{{BOOL_CONDITIONS_SET}}', 'on') else '⬜' }} |
+              | **5. Steady State** | *(holding)* | {{ '🟢' if is_state('{{BOOL_CONDITIONS_SET}}', 'on') and is_state('{{BOOL_SETPOINT_CHANGED}}', 'off') else '⬜' }} |
+
+              ---
+
+              **Exit Conditions:**
+              | Trigger | Status |
+              |:--------|:------:|
+              | `df_event_ended` (calendar OFF) | {{ '🔴 TRIGGERED' if is_state('{{CALENDAR}}', 'off') and is_state('{{BOOL_EVENT_STATUS}}', 'on') else '⬜' }} |
+              | `Occupant Overrides In App` | {{ '🔴 TRIGGERED' if is_state('{{BOOL_RESTRICTION}}', 'off') and is_state('{{BOOL_EVENT_STATUS}}', 'on') else '⬜' }} |
+              | `Occupant Overrides On Device` | {{ '🔴 TRIGGERED' if is_state('{{BOOL_SETPOINT_CHANGED}}', 'on') else '⬜' }} |
+            text_only: true
+
+          - type: markdown
+            title: 📊 State Vector
+            content: >-
+              | Flag | State | Last Changed |
+              |:-----|:-----:|:-------------|
+              | `df_event_status` | {{ '🟢 ON' if is_state('{{BOOL_EVENT_STATUS}}', 'on') else '⚫ OFF' }} | {{ relative_time(states['{{BOOL_EVENT_STATUS}}'].last_changed) }} ago |
+              | `df_restriction_status` | {{ '🟢 ON' if is_state('{{BOOL_RESTRICTION}}', 'on') else '⚫ OFF' }} | {{ relative_time(states['{{BOOL_RESTRICTION}}'].last_changed) }} ago |
+              | `enable_climate_snapshot` | {{ '🟢 ON' if is_state('{{BOOL_SNAPSHOT}}', 'on') else '⚫ OFF' }} | {{ relative_time(states['{{BOOL_SNAPSHOT}}'].last_changed) }} ago |
+              | `set_df_conditions` | {{ '🟢 ON' if is_state('{{BOOL_SET_CONDITIONS}}', 'on') else '⚫ OFF' }} | {{ relative_time(states['{{BOOL_SET_CONDITIONS}}'].last_changed) }} ago |
+              | `df_conditions_set` | {{ '🟢 ON' if is_state('{{BOOL_CONDITIONS_SET}}', 'on') else '⚫ OFF' }} | {{ relative_time(states['{{BOOL_CONDITIONS_SET}}'].last_changed) }} ago |
+              | `set_point_changed_on_device` | {{ '🔴 ON' if is_state('{{BOOL_SETPOINT_CHANGED}}', 'on') else '⚫ OFF' }} | {{ relative_time(states['{{BOOL_SETPOINT_CHANGED}}'].last_changed) }} ago |
+
+              ---
+
+              **Expected State by Stage:**
+              | Stage | 1 | 2 | 3 | 4 | 5 | 6 |
+              |:------|:-:|:-:|:-:|:-:|:-:|:-:|
+              | IDLE | ⚫ | ⚫ | ⚫ | ⚫ | ⚫ | ⚫ |
+              | Stage 1 | 🟢 | ⚫ | ⚫ | ⚫ | ⚫ | ⚫ |
+              | Stage 2 | 🟢 | 🟢 | 🟢 | ⚫ | ⚫ | ⚫ |
+              | Stage 3 | 🟢 | 🟢 | 🟢 | 🟢 | ⚫ | ⚫ |
+              | Stage 4+ | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | ⚫ |
+              | Override | ⚫ | ⚫ | ⚫ | ⚫ | ⚫ | ⚫ |
+            text_only: true
+
+      # ═══════════════════════════════════════════════════════════
+      # SECTION 3: Controls
+      # ═══════════════════════════════════════════════════════════
+      - type: grid
+        name: Automation Controllers
+        cards:
+          - type: heading
+            heading_style: title
+            heading: Automation Controllers
+
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: 🔄 Reset All Flags
+                icon: mdi:restart-alert
+                tap_action:
+                  action: call-service
+                  service: input_boolean.turn_off
+                  target:
+                    entity_id:
+                      - {{BOOL_EVENT_STATUS}}
+                      - {{BOOL_RESTRICTION}}
+                      - {{BOOL_SNAPSHOT}}
+                      - {{BOOL_SET_CONDITIONS}}
+                      - {{BOOL_CONDITIONS_SET}}
+                      - {{BOOL_SETPOINT_CHANGED}}
+                  confirmation:
+                    text: Reset ALL DF flags to OFF?
+                icon_height: 40px
+
+              - type: button
+                name: ✋ In-App Override
+                icon: mdi:hand-back-left
+                tap_action:
+                  action: call-service
+                  service: input_boolean.turn_off
+                  target:
+                    entity_id: {{BOOL_RESTRICTION}}
+                  confirmation:
+                    text: Trigger In-App Override?
+                icon_height: 40px
+
+              - type: button
+                name: 📜 Automation Trace
+                icon: mdi:bug
+                tap_action:
+                  action: navigate
+                  navigation_path: /config/automation/trace
+                icon_height: 40px
+                entity: {{AUTOMATION}}
+
+          - type: entities
+            title: ⚙️ Manual Flag Control
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - entity: {{BOOL_EVENT_STATUS}}
+              - entity: {{BOOL_RESTRICTION}}
+              - entity: {{BOOL_SNAPSHOT}}
+              - entity: {{BOOL_SET_CONDITIONS}}
+              - entity: {{BOOL_CONDITIONS_SET}}
+              - entity: {{BOOL_SETPOINT_CHANGED}}
+
+          - type: logbook
+            title: 📋 Recent Activity
+            hours_to_show: 24
+            entities:
+              - {{BOOL_EVENT_STATUS}}
+              - {{BOOL_RESTRICTION}}
+              - {{BOOL_SNAPSHOT}}
+              - {{BOOL_SET_CONDITIONS}}
+              - {{BOOL_CONDITIONS_SET}}
+              - {{BOOL_SETPOINT_CHANGED}}
+              - {{CLIMATE}}
+              - {{CALENDAR}}
+
+      # ═══════════════════════════════════════════════════════════
+      # SECTION 4: Calendar & Variables
+      # ═══════════════════════════════════════════════════════════
+      - type: grid
+        cards:
+          - type: heading
+            heading_style: title
+            heading: Stage 1 IDLE → Init
+
+          - type: markdown
+            title: 🔢 Computed Variables
+            content: >-
+              {% set desc = state_attr('{{CALENDAR}}', 'description') %}
+              {% if is_state('{{CALENDAR}}', 'on') and desc and desc | trim | first == '{' %}
+              {% set parsed = desc | from_json %}
+              {% set t_delta = parsed.get('T_delta', 0) | float(0) %}
+              {% set season = parsed.get('season', '') %}
+              {% set multiplier = 1 if season == 'cooling' else (-1 if season == 'heating' else 0) %}
+
+              | Variable | Value | Notes |
+              |:---------|:------|:------|
+              | `t_delta` | **{{ t_delta }}** | From calendar description |
+              | `season` | **{{ season }}** | From calendar description |
+              | `df_delta_multiplier` | **{{ multiplier }}** | +1 cooling, -1 heating |
+
+              {% else %}
+
+              | Variable | Value | Notes |
+              |:---------|:------|:------|
+              | `t_delta` | **0** | Calendar off or invalid JSON |
+              | `season` | **''** | Calendar off or invalid JSON |
+              | `df_delta_multiplier` | **0** | Calendar off or invalid JSON |
+
+              ⚠️ *If these show 0/empty when calendar is ON, the automation will fail at Stage 4*
+              {% endif %}
+            text_only: true
+
+          - type: markdown
+            title: 📅 Calendar Event
+            content: >-
+              **Entity:** `{{CALENDAR}}`
+
+              **State:** {{ '🟢 ON' if is_state('{{CALENDAR}}', 'on') else '⚫ OFF' }}
+
+              {% if is_state('{{CALENDAR}}', 'on') %}
+              ---
+
+              **Active Event:** {{ state_attr('{{CALENDAR}}', 'message') }}
+
+              | Property | Value |
+              |:---------|:------|
+              | Start | {{ state_attr('{{CALENDAR}}', 'start_time') }} |
+              | End | {{ state_attr('{{CALENDAR}}', 'end_time') }} |
+
+              **Description (raw):**
+              ```
+              {{ state_attr('{{CALENDAR}}', 'description') }}
+              ```
+
+              {% set desc = state_attr('{{CALENDAR}}', 'description') %}
+              {% if desc and desc | trim != '' %}
+              {% if desc | trim | first == '{' %}
+              {% set parsed = desc | from_json %}
+              **Parsed:** T_delta={{ parsed.get('T_delta', '⚠️') }}°F, season={{ parsed.get('season', '⚠️') }}
+              {% else %}
+              ⚠️ **Not valid JSON**
+              {% endif %}
+              {% else %}
+              ⚠️ **Description empty**
+              {% endif %}
+              {% else %}
+              ---
+              *No active calendar event*
+              {% endif %}
+            text_only: true
+
+          - type: heading
+            heading: Stage 2–3 Snapshot
+            heading_style: title
+
+          - type: entities
+            title: 📸 Snapshot Memory
+            entities:
+              - entity: {{TEXT_SNAP_HVAC_MODE}}
+                name: hvac_mode
+              - entity: {{TEXT_SNAP_PRESET}}
+                name: preset_mode
+              - entity: {{TEXT_SNAP_FAN}}
+                name: fan_mode
+              - entity: {{TEXT_SNAP_ACTION}}
+                name: hvac_action
+              - type: divider
+              - entity: {{TEXT_SNAP_TEMP}}
+                name: temperature (single)
+              - entity: {{TEXT_SNAP_HIGH}}
+                name: target_temp_high (dual)
+              - entity: {{TEXT_SNAP_LOW}}
+                name: target_temp_low (dual)
+
+          - type: heading
+            heading: Stage 4 Apply DF
+            heading_style: title
+
+          - type: horizontal-stack
+            cards:
+              - type: thermostat
+                entity: {{CLIMATE}}
+              - type: entities
+                title: 🌡️ Plant State
+                entities:
+                  - entity: {{CLIMATE}}
+                    type: attribute
+                    attribute: hvac_action
+                    name: HVAC Action
+                  - entity: {{CLIMATE}}
+                    type: attribute
+                    attribute: preset_mode
+                    name: Preset Mode
+                  - type: divider
+                  - entity: {{CLIMATE}}
+                    type: attribute
+                    attribute: current_temperature
+                    name: Current Temp
+                    suffix: °F
+                  - entity: {{CLIMATE}}
+                    type: attribute
+                    attribute: temperature
+                    name: Target Temp
+                    suffix: °F
+                  - entity: {{CLIMATE}}
+                    type: attribute
+                    attribute: target_temp_high
+                    name: Target High
+                    suffix: °F
+                  - entity: {{CLIMATE}}
+                    type: attribute
+                    attribute: target_temp_low
+                    name: Target Low
+                    suffix: °F
+
+          - type: markdown
+            title: 📊 Snapshot vs Current
+            content: >-
+              | Param | Snapshot | Current | Δ |
+              |:------|:--------:|:-------:|:-:|
+              | **Mode** | {{ states('{{TEXT_SNAP_HVAC_MODE}}') | trim }} | {{ states('{{CLIMATE}}') }} | {{ '✓' if states('{{TEXT_SNAP_HVAC_MODE}}') | trim == states('{{CLIMATE}}') else '≠' }} |
+              | **Temp** | {{ states('{{TEXT_SNAP_TEMP}}') }} | {{ state_attr('{{CLIMATE}}', 'temperature') }} | {% set s = states('{{TEXT_SNAP_TEMP}}') | trim | float(-999) %}{% set c = state_attr('{{CLIMATE}}', 'temperature') | float(-999) %}{{ (c - s) | round(1) if s > -900 and c > -900 else '—' }}°F |
+              | **High** | {{ states('{{TEXT_SNAP_HIGH}}') }} | {{ state_attr('{{CLIMATE}}', 'target_temp_high') }} | {% set s = states('{{TEXT_SNAP_HIGH}}') | trim | float(-999) %}{% set c = state_attr('{{CLIMATE}}', 'target_temp_high') | float(-999) %}{{ (c - s) | round(1) if s > -900 and c > -900 else '—' }}°F |
+              | **Low** | {{ states('{{TEXT_SNAP_LOW}}') }} | {{ state_attr('{{CLIMATE}}', 'target_temp_low') }} | {% set s = states('{{TEXT_SNAP_LOW}}') | trim | float(-999) %}{% set c = state_attr('{{CLIMATE}}', 'target_temp_low') | float(-999) %}{{ (c - s) | round(1) if s > -900 and c > -900 else '—' }}°F |
+
+    header:
+      card:
+        type: markdown
+        text_only: true
+        content: >-
+          # Hello {{ user }}
+
+          DF Monitor for **{{ states['{{CLIMATE}}'].name }}**
+      layout: center
+      badges_position: top
+      badges_wrap: wrap
